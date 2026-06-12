@@ -96,7 +96,13 @@ body {
 #progress-tooltip {
     pointer-events: none;
     transform: translateX(-50%);
-    transition: opacity 0.2s;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 6px 10px;
 }
 
 .speed-btn.active {

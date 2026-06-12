@@ -249,20 +249,17 @@ export class CanvasRenderer {
         ctx.fill();
         ctx.restore();
 
-        // 3.5 获取上下文信息
-        const prevArc = targetIdx > 0 ? arcs[targetIdx - 1] : null;
-        const nextArc = targetIdx < arcs.length - 1 ? arcs[targetIdx + 1] : null;
+        // 3.5 获取高精度语义上下文
+        // 刚刚的动作：也就是如何转移到 targetArc 的，对应的正是前一个 arc 结尾处所带的 move
+        const prevMoveName = (targetIdx > 0 && arcs[targetIdx - 1].move) ? arcs[targetIdx - 1].move.name : "无";
+        
+        // 下一个动作：即在 targetArc 滑行终点即将执行的 move
+        const nextMoveName = targetArc.move ? targetArc.move.name : "无";
 
         return {
-            current: {
-                state: targetArc.state,
-                moveName: targetArc.move ? targetArc.move.name : "滑行/蹬冰"
-            },
-            prev: prevArc ? {
-                state: prevArc.state,
-                moveName: prevArc.move ? prevArc.move.name : "起始"
-            } : null,
-            nextMove: targetArc.move ? targetArc.move.name : (nextArc && nextArc.move ? nextArc.move.name : "收尾/结束")
+            state: targetArc.state,
+            prevMove: prevMoveName,
+            nextMove: nextMoveName
         };
     }
 

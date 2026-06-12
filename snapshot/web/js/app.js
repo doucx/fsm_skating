@@ -448,25 +448,14 @@ function renderAnimationStep(geometry) {
     const info = renderer.drawTracker(geometry, animProgress, transform, fFactor);
     
     if (info) {
-        // 更新当前主看板
-        document.getElementById("overlay-state").innerText = info.current.state;
-        document.getElementById("overlay-move").innerText = info.current.moveName;
+        // 1. 刚刚的动作
+        document.getElementById("overlay-prev-move").innerText = info.prevMove;
 
-        // 更新上一个状态
-        const prevS = document.getElementById("overlay-prev-state");
-        const prevM = document.getElementById("overlay-prev-move");
-        if (info.prev) {
-            prevS.innerText = info.prev.state;
-            prevM.innerText = info.prev.moveName;
-        } else {
-            prevS.innerText = "无";
-            prevM.innerText = "起始位置";
-        }
+        // 2. 当前滑行状态
+        document.getElementById("overlay-state").innerText = info.state;
 
-        // 更新预告动作
-        // 注意：逻辑上，“当前滑行弧线”之后的动作就是该弧线末端的 Move
-        const nextM = document.getElementById("overlay-next-move");
-        nextM.innerText = info.nextMove || "结束";
+        // 3. 下一个动作
+        document.getElementById("overlay-next-move").innerText = info.nextMove;
 
         document.getElementById("anim-progress-bar").style.width = `${animProgress * 100}%`;
     }
@@ -536,9 +525,24 @@ function initInteraction() {
         // 基于 DOM 查找实现更精准的 Tooltip
         const targetSeg = document.elementFromPoint(e.clientX, rect.top + rect.height/2);
         if (targetSeg && targetSeg.classList.contains('timeline-segment')) {
-            tooltip.innerHTML = `<span class="text-white font-bold">${targetSeg.dataset.state}</span> · ${targetSeg.dataset.move}`;
+            const isLeft = targetSeg.dataset.state[0] === 'L';
+            const footText = isLeft ? "左脚" : "右脚";
+            const footColor = isLeft ? "text-sky-400" : "text-orange-400";
+
+            tooltip.innerHTML = `
+                <div class="flex flex-col space-y-1 text-[11px] font-sans">
+                    <div class="flex items-center justify-between space-x-4 border-b border-slate-800 pb-1">
+                        <span class="${footColor} font-black font-mono text-xs">${targetSeg.dataset.state}</span>
+                        <span class="text-slate-400 scale-90">${footText}滑行</span>
+                    </div>
+                    <div class="flex items-center justify-between space-x-4">
+                        <span class="text-slate-500">即将执行:</span>
+                        <span class="text-slate-200 font-semibold truncate max-w-[100px]">${targetSeg.dataset.move}</span>
+                    </div>
+                </div>
+            `;
         } else {
-            tooltip.innerText = `${Math.round(hoverProgress * 100)}%`;
+            tooltip.innerHTML = `<span class="text-sky-300 font-mono font-bold">${Math.round(hoverProgress * 100)}%</span>`;
         }
     });
 

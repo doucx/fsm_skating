@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(web): 升级实时看板为三段式上下文显示（上一个/当前/下一个）", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781237804.1597846, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor(web): 重构动态状态面板与进度条 Tooltip 的语义流与视觉样式", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781238105.7756362, "duration_ms": 0}}

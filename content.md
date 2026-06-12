@@ -1,48 +1,40 @@
-这是一个非常专业的交互改进。将动态看板升级为“三段式”上下文显示，能让用户更清晰地预判接下来的动作走向，就像观看花样滑冰直播时的实时解说字幕。
+这是一次非常关键的可用性重构！将状态面板修改为**“刚刚的动作 ➜ 滑行状态 ➜ 下一个动作”**的语义流，能让编排者在播放过程中，清晰地在逻辑和时间轴上理解动作之间的起承转合。同时，我们将 Tooltip 重构为现代浮动 HUD 样式，使其更为美观不遮挡。
 
-我将为你实现一个 **语义化 HUD (平视显示器)**：
-1.  **看板结构重组**：分为“已完成 (PREV)”、“正在执行 (CURRENT)”和“预备动作 (NEXT)”三个区域。
-2.  **上下文感知引擎**：在渲染循环中实时定位进度所属的圆弧片段及其前后关联节点。
-3.  **视觉分层**：通过字号和透明度区分主次，让当前的用刃状态（如 RBI）保持最醒目。
+我将为你进行以下改进：
+1.  **重构 HUD 面板**：将原本臃肿的“三段式”面板，改造为紧凑、语义流畅的横排/纵排卡片流，完美契合你要求的结构。
+2.  **重构 Tooltip**：引入磨砂玻璃质感、天蓝色边框微光和阴影，并将悬停内容升级为“用刃 - 动作”双行对比的精细化视图。
+3.  **重构数据管道**：修改 `canvasRenderer.js` 中的 `drawTracker` 物理计算，使其精准吐出：刚刚发生的转体/蹬冰、当前的用刃、即将到来的下一个步法。
 
-### [WIP] feat(web): 升级实时看板为三段式上下文显示（上一个/当前/下一个）
+### [WIP] refactor(web): 重构动态状态面板与进度条 Tooltip 的语义流与视觉样式
 
 ### 用户需求
-看板应同时显示滑行链条的上下文：上一个动作状态、当前滑行状态以及即将到来的下一个动作。
+1.  重构动态面板展示：按“刚刚的动作：无 / 滑行状态：RBI / 下一个动作：前外转三”的清晰时间顺序流向展示。
+2.  修复、重编 Tooltip 样式，使其在悬停进度条时布局精美、定位精确、不出现溢出。
 
 ### 评论
-这种设计极大增强了“编排感”。在滑冰教学中，教练经常强调“从哪来”和“到哪去”，这个看板能够完美契合这一教学逻辑。
+当前的语义显示确实存在歧义。引入“刚刚动作 - 当前滑行 - 下个动作”之后，播放器就具备了“过去-现在-未来”的完整时间维度的可预测性，这对训练滑手控制用刃时机的节奏感极有帮助。
 
 ### 目标
-1.  修改 `index.html` 中的看板结构，增加前后节点容器。
-2.  更新 `canvasRenderer.js` 中的 `drawTracker`，使其返回包含前后文的完整信息对象。
-3.  在 `app.js` 中实时更新这些新字段。
+1.  修改 `index.html` 中的 `#playback-overlay` 面板结构。
+2.  修改 `style.css` 完善 `#progress-tooltip` 浮动样式。
+3.  优化 `canvasRenderer.js` 的 `drawTracker` 状态上下文返回值。
+4.  在 `app.js` 中完美呈现新的语义流。
 
 ### 标签
-#intent/build #flow/ready #priority/high #comp/docs #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/playback-hud #task/action/refactor #task/state/continue
+#intent/refine #flow/ready #priority/high #comp/docs #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/video-player-controls #task/action/refactor #task/state/continue
 
 ---
 
 ### Script
 
-#### Acts 1: 更新 HTML 结构
-重新定义动态看板的内部布局，采用垂直堆叠的三段式结构。
+#### Acts 1: 更新 HTML 结构 (重构状态看板)
+修改为更优雅的三段横向流动布局 HUD。
 
 ~~~~~act
 patch_file
 web/index.html
 ~~~~~
 ~~~~~html.old
-                            <!-- 动态看板 -->
-                            <div id="playback-overlay" class="anim-overlay absolute top-4 left-4 z-10 hidden">
-                                <div class="bg-slate-900/80 backdrop-blur-md border border-sky-500/30 rounded-lg p-3 min-w-[140px]">
-                                    <div class="text-[10px] text-sky-400 uppercase tracking-widest font-bold mb-1">当前动态</div>
-                                    <div id="overlay-move" class="text-sm font-bold text-white truncate">--</div>
-                                    <div id="overlay-state" class="text-xl font-black text-sky-300 font-mono mt-1 tracking-tighter">LFO</div>
-                                </div>
-                            </div>
-~~~~~
-~~~~~html.new
                             <!-- 动态看板 (三段式 HUD) -->
                             <div id="playback-overlay" class="anim-overlay absolute top-4 left-4 z-10 hidden">
                                 <div class="bg-slate-900/90 backdrop-blur-xl border border-sky-500/30 rounded-xl p-4 min-w-[180px] shadow-2xl">
@@ -72,56 +64,76 @@ web/index.html
                                     </div>
                                 </div>
                             </div>
+                            <!-- 进度条容器 (增加交互响应范围) -->
+~~~~~
+~~~~~html.new
+                            <!-- 动态看板 (三段式 HUD) -->
+                            <div id="playback-overlay" class="anim-overlay absolute top-4 left-4 z-10 hidden">
+                                <div class="bg-slate-950/90 backdrop-blur-xl border border-sky-500/20 rounded-xl p-4 min-w-[210px] shadow-2xl flex flex-col space-y-3">
+                                    <!-- 刚刚的动作 -->
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-slate-400 flex items-center"><i class="fa-solid fa-backward-step mr-1.5 text-slate-500"></i> 刚刚的动作：</span>
+                                        <span id="overlay-prev-move" class="font-bold text-slate-300 truncate max-w-[100px]">无</span>
+                                    </div>
+
+                                    <!-- 滑行状态 -->
+                                    <div class="flex items-center justify-between border-y border-slate-800/80 py-2">
+                                        <span class="text-slate-400 text-xs flex items-center"><i class="fa-solid fa-person-skating mr-1.5 text-sky-400"></i> 滑行状态：</span>
+                                        <span id="overlay-state" class="text-2xl font-black text-sky-400 font-mono tracking-tighter">LFO</span>
+                                    </div>
+
+                                    <!-- 下一个动作 -->
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-slate-400 flex items-center"><i class="fa-solid fa-forward-step mr-1.5 text-amber-500"></i> 下一个动作：</span>
+                                        <span id="overlay-next-move" class="font-bold text-amber-400 truncate max-w-[100px]">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 进度条容器 (增加交互响应范围) -->
 ~~~~~
 
-#### Acts 2: 扩展 Renderer 数据返回
-修改 `drawTracker` 逻辑，使其不仅找到当前的 `targetArc`，还根据索引提取前后弧线/动作的信息。
+#### Acts 2: 优化 CSS 样式 (重写 Tooltip)
+为悬浮窗设计更高级的毛玻璃与边框微光。
+
+~~~~~act
+patch_file
+web/css/style.css
+~~~~~
+~~~~~css.old
+/* 进度预览 Tooltip */
+#progress-tooltip {
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: opacity 0.2s;
+}
+
+.speed-btn.active {
+~~~~~
+~~~~~css.new
+/* 进度预览 Tooltip */
+#progress-tooltip {
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: opacity 0.15s ease, transform 0.1s ease;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.speed-btn.active {
+~~~~~
+
+#### Acts 3: 重构物理追踪数据的输出结构
+在 `canvasRenderer.js` 里重新设计返回的字段，把当前片段前后的动作归属计算得清清楚楚。
 
 ~~~~~act
 patch_file
 web/js/canvasRenderer.js
 ~~~~~
 ~~~~~javascript.old
-        for (const arc of arcs) {
-            const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
-            if (currentLen + arcLen >= targetLen) {
-                targetArc = arc;
-                localProgress = (targetLen - currentLen) / arcLen;
-                break;
-            }
-            currentLen += arcLen;
-        }
-
-        // 2. 计算插值坐标
-~~~~~
-~~~~~javascript.new
-        let targetIdx = arcs.length - 1;
-        for (let i = 0; i < arcs.length; i++) {
-            const arc = arcs[i];
-            const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
-            if (currentLen + arcLen >= targetLen) {
-                targetArc = arc;
-                targetIdx = i;
-                localProgress = (targetLen - currentLen) / arcLen;
-                break;
-            }
-            currentLen += arcLen;
-        }
-
-        // 2. 计算插值坐标
-~~~~~
-~~~~~act
-patch_file
-web/js/canvasRenderer.js
-~~~~~
-~~~~~javascript.old
-        return {
-            state: targetArc.state,
-            moveName: targetArc.move ? targetArc.move.name : "滑行/蹬冰"
-        };
-    }
-~~~~~
-~~~~~javascript.new
         // 3.5 获取上下文信息
         const prevArc = targetIdx > 0 ? arcs[targetIdx - 1] : null;
         const nextArc = targetIdx < arcs.length - 1 ? arcs[targetIdx + 1] : null;
@@ -139,26 +151,30 @@ web/js/canvasRenderer.js
         };
     }
 ~~~~~
+~~~~~javascript.new
+        // 3.5 获取高精度语义上下文
+        // 刚刚的动作：也就是如何转移到 targetArc 的，对应的正是前一个 arc 结尾处所带的 move
+        const prevMoveName = (targetIdx > 0 && arcs[targetIdx - 1].move) ? arcs[targetIdx - 1].move.name : "无";
+        
+        // 下一个动作：即在 targetArc 滑行终点即将执行的 move
+        const nextMoveName = targetArc.move ? targetArc.move.name : "无";
 
-#### Acts 3: 同步 HUD 状态显示
-更新 `app.js` 中的 `renderAnimationStep` 以填充新的 UI 字段。
+        return {
+            state: targetArc.state,
+            prevMove: prevMoveName,
+            nextMove: nextMoveName
+        };
+    }
+~~~~~
+
+#### Acts 4: 重构看板更新与 Tooltip 渲染
+在 `app.js` 中提取信息，并使用 DOM 精准呈现美观的双行浮动 Tooltip。
 
 ~~~~~act
 patch_file
 web/js/app.js
 ~~~~~
 ~~~~~javascript.old
-    // 执行绘制并获取当前位置的状态信息
-    const currentInfo = renderer.drawTracker(geometry, animProgress, transform, fFactor);
-    
-    if (currentInfo) {
-        document.getElementById("overlay-move").innerText = currentInfo.moveName;
-        document.getElementById("overlay-state").innerText = currentInfo.state;
-        document.getElementById("anim-progress-bar").style.width = `${animProgress * 100}%`;
-    }
-}
-~~~~~
-~~~~~javascript.new
     // 执行绘制并获取当前位置的状态信息
     const info = renderer.drawTracker(geometry, animProgress, transform, fFactor);
     
@@ -187,8 +203,80 @@ web/js/app.js
     }
 }
 ~~~~~
+~~~~~javascript.new
+    // 执行绘制并获取当前位置的状态信息
+    const info = renderer.drawTracker(geometry, animProgress, transform, fFactor);
+    
+    if (info) {
+        // 1. 刚刚的动作
+        document.getElementById("overlay-prev-move").innerText = info.prevMove;
+
+        // 2. 当前滑行状态
+        document.getElementById("overlay-state").innerText = info.state;
+
+        // 3. 下一个动作
+        document.getElementById("overlay-next-move").innerText = info.nextMove;
+
+        document.getElementById("anim-progress-bar").style.width = `${animProgress * 100}%`;
+    }
+}
+~~~~~
+~~~~~act
+patch_file
+web/js/app.js
+~~~~~
+~~~~~javascript.old
+    progressContainer.addEventListener("mousemove", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const hoverProgress = Math.max(0, Math.min(1, x / rect.width));
+        
+        tooltip.style.opacity = "1";
+        tooltip.style.left = `${x}px`;
+        
+        // 基于 DOM 查找实现更精准的 Tooltip
+        const targetSeg = document.elementFromPoint(e.clientX, rect.top + rect.height/2);
+        if (targetSeg && targetSeg.classList.contains('timeline-segment')) {
+            tooltip.innerHTML = `<span class="text-white font-bold">${targetSeg.dataset.state}</span> · ${targetSeg.dataset.move}`;
+        } else {
+            tooltip.innerText = `${Math.round(hoverProgress * 100)}%`;
+        }
+    });
+~~~~~
+~~~~~javascript.new
+    progressContainer.addEventListener("mousemove", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const hoverProgress = Math.max(0, Math.min(1, x / rect.width));
+        
+        tooltip.style.opacity = "1";
+        tooltip.style.left = `${x}px`;
+        
+        // 基于 DOM 查找实现更精准的 Tooltip
+        const targetSeg = document.elementFromPoint(e.clientX, rect.top + rect.height/2);
+        if (targetSeg && targetSeg.classList.contains('timeline-segment')) {
+            const isLeft = targetSeg.dataset.state[0] === 'L';
+            const footText = isLeft ? "左脚" : "右脚";
+            const footColor = isLeft ? "text-sky-400" : "text-orange-400";
+
+            tooltip.innerHTML = `
+                <div class="flex flex-col space-y-1 text-[11px] font-sans">
+                    <div class="flex items-center justify-between space-x-4 border-b border-slate-800 pb-1">
+                        <span class="${footColor} font-black font-mono text-xs">${targetSeg.dataset.state}</span>
+                        <span class="text-slate-400 scale-90">${footText}滑行</span>
+                    </div>
+                    <div class="flex items-center justify-between space-x-4">
+                        <span class="text-slate-500">即将执行:</span>
+                        <span class="text-slate-200 font-semibold truncate max-w-[100px]">${targetSeg.dataset.move}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            tooltip.innerHTML = `<span class="text-sky-300 font-mono font-bold">${Math.round(hoverProgress * 100)}%</span>`;
+        }
+    });
+~~~~~
 
 ### 下一步建议
-- **关键帧预览**：当鼠标悬停在进度条某个位置时，在画布上显示一个半透明的“虚影”小球，预览该位置的姿态。
-- **AB 段循环**：支持在进度条上标记 A 点和 B 点，让动画在特定步法区间内反复循环播放，方便深入拆解动作。
-- **UI 微调**：可以考虑为不同的步法类别（如 Turn, Step, Mohawk）在进度条上设置不同的高度或纹理，增强辨识度。
+- **关键帧闪烁标记**：当鼠标悬停在进度条节点分隔线（动作节点）上时，让画布上对应的动作符号闪烁提示，实现双向交互绑定。
+- **键盘逐帧微调**：按 `Left Arrow` (后退一帧) / `Right Arrow` (前进一帧) 进行逐帧步法拆解，这是专业花滑教练纠正用刃错误的常用分析手段。
