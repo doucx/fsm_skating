@@ -1,92 +1,64 @@
-这是一个非常专业的交互需求。在地图应用（如 Google Maps）或 CAD 软件中，以鼠标指针为中心进行缩放（Zoom-at-Mouse）是标准做法，因为它能让用户精确地“推开”不需要的区域并“拉近”感兴趣的特定动作。
+好的，我们已经圆满完成了 2D 轨迹系统的全方位升级，包括引入 ISU 专业视觉规范、解决缩放同步 Bug，以及实现以鼠标为中心的高级交互手势。现在我将这些变更作为一个完整的逻辑单元提交到代码库。
 
-我将修改 `web/js/app.js` 中的 `wheel` 事件监听器：
-1.  **捕获锚点坐标**：获取缩放发生时鼠标在画布上的精确坐标 $(mx, my)$。
-2.  **平移补偿计算**：在缩放倍率 `zoomFactor` 改变的同时，根据鼠标位置与当前平移量（Pan）的几何比例，反向计算并补偿 `panX` 和 `panY`。
-3.  **保持点位不动**：确保在缩放前后，鼠标指针下方的那个物理坐标点在屏幕上的像素位置保持绝对静止。
-
-## [WIP] feat(web): 实现以鼠标指针为中心的无损缩放逻辑
+## [COMMIT] feat(web): 升级 2D 轨迹视觉至 ISU 标准并引入交互式缩放平移
 
 ### 用户需求
-修改 2D 轨迹的全屏交互逻辑：滚轮缩放时不再固定以屏幕中心为轴，而是以鼠标当前指向的位置为锚点进行缩放。
+完成对花样滑冰编排系统 Web 端的交互与视觉重构，并提交所有相关变更。
 
 ### 评论
-“以鼠标为中心缩放”是高阶图形交互的灵魂。它允许用户通过简单的滚轮操作，像操作放大镜一样直接“对准”某个具体的转三步或莫霍克步，极大地提升了编排审查的效率。
+这是一次从“功能原型”向“专业级工具”的跨越。通过引入国际滑联（ISU）的图形标准，系统不仅在视觉上更加美观，更具备了极高的专业参考价值。同时，复杂的缩放与平移交互为用户提供了探索大型编排细节的能力。
 
 ### 目标
-1. 升级 `web/js/app.js` 中的 `wheel` 监听逻辑。
-2. 引入平移补偿公式，实时更新 `panX` 和 `panY` 以抵消缩放造成的点位偏移。
+1.  将 `web/` 目录下的修改（HTML、CSS、JS）持久化到 Git 历史。
+2.  确保提交记录清晰描述了 ISU 标准规范、缩放 Bug 修复以及交互手势的改进。
 
 ### 基本原理
-为了让鼠标下的点 $M$ 在缩放后保持不动，我们需要更新平移量。
-设定缩放前的倍率为 $z$，缩放后为 $z'$，画布中心为 $C$，平移量为 $pan$。
-鼠标对应的“自动布局点”坐标为 $A$。
-根据当前的 `transform` 公式：$M = (A - C) \cdot z + C + pan$
-当 $z$ 变为 $z'$ 时，新的平移量 $pan'$ 必须满足：
-$$pan' = (M - C) - \frac{z'}{z} \cdot (M - C - pan)$$
-这样，用户在滚动滚轮时，视觉上就像是在拉伸或压缩鼠标指针所指的那一点，体验非常顺滑。
+按照 Quipu 的工作流规范，在所有文件系统修改完成并验证通过后，通过独立的 `[COMMIT]` 计划执行 `git_add` 和 `git_commit`。这保证了代码库历史的整洁性和可追溯性。
 
 ### 标签
-#intent/refine #flow/ready #priority/high #comp/interfaces #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/mouse-centric-zoom #task/action/refactor #task/state/continue
+#intent/build #flow/ready #priority/medium #comp/interfaces #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/pro-trajectory #task/action/implementation #task/state/end #task/status/completed
 
 ---
 
 ### Script
 
-#### Acts 1: 升级滚轮事件，引入动态平移补偿
+#### Acts 1: 提交 Web 界面交互与视觉升级
 
-我们将重构 `initCanvasInteraction` 中的 `wheel` 回调函数，注入基于鼠标位置的坐标变换数学。
+我们将暂存修改后的 Web 源文件，并创建一个详尽的提交记录。
 
 ~~~~~act
-patch_file
+git_add
+web/index.html
+web/css/style.css
 web/js/app.js
 ~~~~~
-~~~~~javascript.old
-    canvas.addEventListener("wheel", (e) => {
-        if (!document.fullscreenElement) return;
-        e.preventDefault(); // 阻止页面滚动
 
-        const zoomSpeed = 0.08;
-        if (e.deltaY < 0) {
-            zoomFactor *= (1 + zoomSpeed);
-        } else {
-            zoomFactor /= (1 + zoomSpeed);
-            zoomFactor = Math.max(0.15, zoomFactor); // 设定最小收缩边界
-        }
-        drawSkatePath(path);
-    }, { passive: false });
+~~~~~act
+git_commit
 ~~~~~
-~~~~~javascript.new
-    canvas.addEventListener("wheel", (e) => {
-        if (!document.fullscreenElement) return;
-        e.preventDefault();
+~~~~~text
+feat(web): upgrade 2D trajectory to ISU standards and implement interactive zoom/pan
 
-        const mx = e.clientX;
-        const my = e.clientY;
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
+Comprehensive upgrade of the choreography visualization system:
 
-        const oldZoom = zoomFactor;
-        const zoomSpeed = 0.12;
-        
-        // 1. 更新缩放倍率
-        if (e.deltaY < 0) {
-            zoomFactor *= (1 + zoomSpeed);
-        } else {
-            zoomFactor /= (1 + zoomSpeed);
-            zoomFactor = Math.max(0.1, zoomFactor);
-        }
+1. Visual Identity (ISU Standards):
+   - Color coding for footwork: Blue for Left, Orange for Right.
+   - Line style for directionality: Solid for Forward, Dashed for Backward.
+   - Vector rendering of professional ISU symbols for Three-Turn, Bracket, and Mohawk.
+   - Directional arrows synced with foot color and tangent slope.
 
-        // 2. 核心数学：计算以鼠标为中心的平移补偿
-        // 公式：pan' = (M - C) - (z'/z) * (M - C - pan)
-        const ratio = zoomFactor / oldZoom;
-        panX = (mx - cx) - (mx - cx - panX) * ratio;
-        panY = (my - cy) - (my - cy - panY) * ratio;
+2. Interactive Sandbox:
+   - Fullscreen mode support with high-resolution buffer re-adjustment.
+   - Zoom-at-mouse logic for precision inspection of complex paths.
+   - Drag-to-pan functionality in fullscreen mode.
+   - Removed conflicting click-to-exit-fullscreen on canvas to prioritize panning.
 
-        drawSkatePath(path);
-    }, { passive: false });
+3. Graphical Integrity:
+   - Fixed scaling bugs where arc radii and labels didn't sync with zoom.
+   - Implemented dynamic scaling for line widths, dash gaps, fonts, and ISU symbols.
+   - Included move names in the trajectory flow trail for better feedback.
 ~~~~~
 
 ### 下一步建议
-- **多动作测试**: 在编排了长路径（例如 15 步以上）后进入全屏，尝试将鼠标放在路径末尾的一个特定转三步符号上，滚动滚轮，观察该符号是否始终锁定在鼠标指针尖端。
-- **边界检查**: 在极端缩小（Zoom 极小）的情况下，平移量的计算依然有效，但图形可能会缩成一个点，这是正常物理表现。如果你需要，我们可以添加一个“重置视图”双击手势。
+- **后端同步**: 随着前端视觉能力的增强，可以考虑在 `moves_config.yaml` 中为动作添加更多物理属性（如弧度、倾刃深度），以便前端绘制出更真实的非圆曲线。
+- **导出功能**: 增加一个“导出为图片”的按钮，允许用户将生成的专业轨迹图保存为 PNG 或 SVG，方便分享给教练或队友。
