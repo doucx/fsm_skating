@@ -23,6 +23,22 @@ def test_transitions_filtering(engine):
     assert len(lfi_moves) >= 1
     assert lfi_moves[0]["move"]["id"] == "change_of_edge"
 
+def test_rotation_direction_inference(engine):
+    # LFO (自然弯曲 CCW) -> LBI 
+    # 1. 前外转三 (turn_rotation: natural) 应当推导出 CCW 旋转
+    # 2. 括弧步 (turn_rotation: opposite) 应当推导出 CW 旋转
+    current = State.from_string("LFO")
+    results = engine.get_possible_transitions(current)
+    
+    lbi_moves = [r for r in results if str(r["target_state"]) == "LBI"]
+    assert len(lbi_moves) >= 2
+    
+    three_turn = [m for m in lbi_moves if "three_turn" in m["move"]["id"]][0]
+    bracket = [m for m in lbi_moves if m["move"]["id"] == "bracket"][0]
+    
+    assert three_turn["move"]["rotation_dir"] == "CCW"
+    assert bracket["move"]["rotation_dir"] == "CW"
+
 def test_verify_sequence(engine):
     # 前内莫霍克 (RFI -> LBI) 是 conditions: foot=False, dir=False, edge=True, start: F, I
     res = engine.verify_sequence("RFI -> LBI")

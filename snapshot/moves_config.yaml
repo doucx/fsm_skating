@@ -12,6 +12,7 @@ moves:
   - id: "forward_outside_three_turn"
     name: "前外转三 (Forward Outside Three-Turn)"
     difficulty: 2
+    turn_rotation: "natural"
     conditions:
       same_foot: true
       same_dir: false
@@ -23,6 +24,7 @@ moves:
   - id: "forward_inside_three_turn"
     name: "前内转三 (Forward Inside Three-Turn)"
     difficulty: 3
+    turn_rotation: "natural"
     conditions:
       same_foot: true
       same_dir: false
@@ -34,6 +36,7 @@ moves:
   - id: "backward_outside_three_turn"
     name: "后外转三 (Backward Outside Three-Turn)"
     difficulty: 5
+    turn_rotation: "natural"
     conditions:
       same_foot: true
       same_dir: false
@@ -45,6 +48,7 @@ moves:
   - id: "backward_inside_three_turn"
     name: "后内转三 (Backward Inside Three-Turn)"
     difficulty: 4
+    turn_rotation: "natural"
     conditions:
       same_foot: true
       same_dir: false
@@ -57,6 +61,7 @@ moves:
   - id: "bracket"
     name: "括弧步 (Bracket)"
     difficulty: 4
+    turn_rotation: "opposite"
     conditions:
       same_foot: true
       same_dir: false
@@ -68,6 +73,7 @@ moves:
   - id: "rocker"
     name: "摇滚步 (Rocker)"
     difficulty: 4
+    turn_rotation: "natural"
     conditions:
       same_foot: true
       same_dir: false
@@ -77,6 +83,7 @@ moves:
   - id: "counter"
     name: "计数步 (Counter)"
     difficulty: 4
+    turn_rotation: "opposite"
     conditions:
       same_foot: true
       same_dir: false
@@ -104,6 +111,7 @@ moves:
   - id: "forward_inside_mohawk"
     name: "前内莫霍克 (Forward Inside Mohawk)"
     difficulty: 2
+    turn_rotation: "natural"
     conditions:
       same_foot: false
       same_dir: false
@@ -115,6 +123,7 @@ moves:
   - id: "forward_outside_mohawk"
     name: "前外莫霍克 (Forward Outside Mohawk)"
     difficulty: 3
+    turn_rotation: "natural"
     conditions:
       same_foot: false
       same_dir: false
@@ -127,6 +136,7 @@ moves:
   - id: "choctaw"
     name: "乔克陶步 (Choctaw)"
     difficulty: 4
+    turn_rotation: "opposite"
     conditions:
       same_foot: false
       same_dir: false

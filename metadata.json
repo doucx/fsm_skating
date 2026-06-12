@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "Capture: A .gitignore, D PKG-INFO, D SOURCES.txt ... and 4 more files", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781226002.9900768, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat: 引入旋转方向区分及 ISU 旋转均衡度评估", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781226368.4368773, "duration_ms": 0}}

@@ -28,14 +28,43 @@ def export_path(path: List[Tuple[State, Optional[Dict[str, Any]]]]):
     print("📋 转换动作明细:")
     
     total_difficulty = 0
+    cw_count = 0
+    ccw_count = 0
+
     for i in range(len(path) - 1):
         s_curr, m_next = path[i]
         s_next = path[i+1][0]
         # m_next 是从 s_curr 到 s_next 的动作
         if m_next:
-            print(f"  第 {i+1} 步: {s_curr} ──▶ {s_next} | {m_next['name']} (难度: {m_next['difficulty']})")
+            rot_str = ""
+            rot_dir = m_next.get("rotation_dir")
+            if rot_dir == "CW":
+                rot_str = " [顺时针 ↻]"
+                cw_count += 1
+            elif rot_dir == "CCW":
+                rot_str = " [逆时针 ↺]"
+                ccw_count += 1
+                
+            print(f"  第 {i+1} 步: {s_curr} ──▶ {s_next} | {m_next['name']}{rot_str} (难度: {m_next['difficulty']})")
             total_difficulty += m_next["difficulty"]
     
+    print("-" * 55)
+    print("🔄 旋转转体多样性分析 (ISU 步法定级核心参考):")
+    print(f"  * 顺时针旋转 (CW) 动作数: {cw_count}")
+    print(f"  * 逆时针旋转 (CCW) 动作数: {ccw_count}")
+    
+    total_rotations = cw_count + ccw_count
+    if total_rotations > 0:
+        cw_ratio = cw_count / total_rotations
+        ccw_ratio = ccw_count / total_rotations
+        print(f"  * 比例分布: 顺时针 {cw_ratio:.1%} | 逆时针 {ccw_ratio:.1%}")
+        if cw_count > 0 and ccw_count > 0:
+            print("  * ⚖️ 均衡度: [已实现双向旋转] 🎉 符合 ISU 步法多样性定级要求 (包含顺、逆双向转体)。")
+        else:
+            print("  * ⚠️ 均衡度: [仅单向旋转] 编排仅包含单一旋转方向，在 ISU 评级中可能难以获得高难度加分。")
+    else:
+        print("  * 编排中未包含显著的转体类动作。")
+
     print("-" * 55)
     print(f"⛸️ 总计动作: {len(path) - 1} 步 | 综合设计难度评分: {total_difficulty}")
     print("=" * 55 + "\n")
@@ -156,19 +185,44 @@ def run_verifier(engine: ChoreographyEngine):
         print(f"🔥 总计难度系数: {res['total_difficulty']}")
         print("📋 自动动作链条翻译明细:")
         
+        cw_count = 0
+        ccw_count = 0
+
         for idx, trans in enumerate(res["transitions"], 1):
             s_from = trans["from_state"]
             s_to = trans["to_state"]
             selected_move = trans["selected_move"]
             candidates = trans["candidate_moves"]
             
+            rot_str = ""
+            rot_dir = selected_move.get("rotation_dir")
+            if rot_dir == "CW":
+                rot_str = " [顺时针 ↻]"
+                cw_count += 1
+            elif rot_dir == "CCW":
+                rot_str = " [逆时针 ↺]"
+                ccw_count += 1
+
             print(f"  [{idx}] {s_from} ({get_state_desc(s_from)})")
             print(f"       └──▶ {s_to} ({get_state_desc(s_to)})")
-            print(f"            识别动作为: {selected_move['name']} (难度: {selected_move['difficulty']})")
+            print(f"            识别动作为: {selected_move['name']}{rot_str} (难度: {selected_move['difficulty']})")
             
             if len(candidates) > 1:
                 other_names = [c["name"] for c in candidates[1:]]
                 print(f"            (同属于其它候选物理变换: {', '.join(other_names)})")
+        
+        print("-" * 45)
+        print("🔄 旋转体系统计 (ISU 步法定级核心参考):")
+        print(f"  * 顺时针旋转 (CW) 次数: {cw_count}")
+        print(f"  * 逆时针旋转 (CCW) 次数: {ccw_count}")
+        total_rotations = cw_count + ccw_count
+        if total_rotations > 0:
+            if cw_count > 0 and ccw_count > 0:
+                print("  * ⚖️ 均衡度: [已实现双向旋转] 🎉 序列中同时包含顺、逆双向转体动作。")
+            else:
+                print("  * ⚠️ 均衡度: [仅单向旋转] 序列中没有顺、逆双向旋转的交替，ISU 难度评级可能会受限。")
+        else:
+            print("  * 序列中无明显转体类动作。")
         print("✨" * 15 + "\n")
 
 
