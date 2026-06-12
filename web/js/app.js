@@ -6,6 +6,14 @@ import * as ui from './uiController.js';
 let path = [];
 let renderer;
 
+// 动画状态
+let isAnimating = false;
+let isDraggingProgress = false;
+let animProgress = 0; // 0.0 to 1.0
+let lastAnimTime = 0;
+let playbackSpeed = 1.0;
+const BASE_ANIM_DURATION = 1500; // 每步滑行基准 1.5 秒
+
 document.addEventListener("DOMContentLoaded", () => {
     renderer = new CanvasRenderer("skate-canvas");
     initChoreography();
@@ -23,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.loadVerifiedPathToCanvas = loadVerifiedPathToCanvas;
     window.generateSequence = generateSequence;
     window.toggleFullscreen = toggleFullscreen;
+    window.toggleAnimation = toggleAnimation;
+    window.setPlaybackSpeed = setPlaybackSpeed;
     window.chooseNextMove = chooseNextMove;
     window.copyTrajectorySource = copyTrajectorySource;
     window.importTrajectorySource = importTrajectorySource;
@@ -282,6 +292,173 @@ async function generateSequence() {
 function drawPath() {
     const geometry = computeGeometry(path);
     renderer.draw(geometry);
+    
+    // 渲染底层物理时间轴
+    updateLinearTimelineUI(geometry);
+    
+    if (isAnimating || animProgress > 0 || isDraggingProgress) {
+        renderAnimationStep(geometry);
+    }
+}
+
+/**
+ * 将 2D 轨迹投影到 1D 进度条上
+ */
+function updateLinearTimelineUI(geometry) {
+    const { arcs } = geometry;
+    const container = document.getElementById("timeline-segments");
+    if (!arcs || arcs.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+
+    // 只有当路径步数发生变化时才重新渲染背景片段，优化性能
+    const currentStepCount = arcs.length;
+    if (container.dataset.lastCount == currentStepCount) return;
+    container.dataset.lastCount = currentStepCount;
+
+    container.innerHTML = "";
+    const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+
+    arcs.forEach((arc, idx) => {
+        const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
+        const widthPercent = (arcLen / totalLength) * 100;
+        
+        const seg = document.createElement("div");
+        seg.className = "timeline-segment";
+        seg.style.width = `${widthPercent}%`;
+        
+        const isLeft = arc.state[0] === 'L';
+        seg.style.backgroundColor = isLeft ? "#0ea5e9" : "#f97316"; // sky-500 : orange-500
+        
+        // 记录元数据用于 Tooltip
+        seg.dataset.state = arc.state;
+        seg.dataset.move = arc.move ? arc.move.name : "滑行";
+        
+        container.appendChild(seg);
+
+        // 如果不是最后一段，添加一个物理分隔线（动作节点）
+        if (idx < arcs.length - 1) {
+            const marker = document.createElement("div");
+            marker.className = "timeline-marker";
+            // 计算当前累积的百分比位置
+            let accumulatedLen = 0;
+            for(let j=0; j<=idx; j++) accumulatedLen += arcs[j].R * Math.abs(arcs[j].endAngle - arcs[j].startAngle);
+            marker.style.left = `${(accumulatedLen / totalLength) * 100}%`;
+            container.appendChild(marker);
+        }
+    });
+}
+
+function toggleAnimation() {
+    if (path.length <= 1) return;
+    
+    isAnimating = !isAnimating;
+    
+    const icon = document.getElementById("play-icon");
+    const text = document.getElementById("play-text");
+    const fsIcon = document.getElementById("fs-play-icon");
+    const fsText = document.getElementById("fs-play-text");
+    const overlay = document.getElementById("playback-overlay");
+
+    if (isAnimating) {
+        const pauseIcon = "fa-solid fa-pause";
+        icon.className = pauseIcon + " mr-1.5";
+        fsIcon.className = pauseIcon;
+        text.innerText = "暂停回放";
+        fsText.innerText = "暂停";
+        
+        overlay.classList.remove("hidden");
+        if (animProgress >= 1.0) animProgress = 0;
+        lastAnimTime = performance.now();
+        requestAnimationFrame(animationLoop);
+    } else {
+        const playIcon = "fa-solid fa-play";
+        icon.className = playIcon + " mr-1.5";
+        fsIcon.className = playIcon;
+        text.innerText = "继续回放";
+        fsText.innerText = "播放";
+    }
+}
+
+function animationLoop(timestamp) {
+    // 如果正在拖拽，跳过自动进度增加，但保持循环以响应外部可能的重绘
+    if (!isAnimating || isDraggingProgress) {
+        if (isAnimating) requestAnimationFrame(animationLoop);
+        return;
+    }
+
+    const deltaTime = timestamp - lastAnimTime;
+    lastAnimTime = timestamp;
+
+    const totalSteps = Math.max(1, path.length - 1);
+    // 倍速影响总时长计算
+    const totalDuration = (totalSteps * BASE_ANIM_DURATION) / playbackSpeed;
+    
+    animProgress += deltaTime / totalDuration;
+
+    if (animProgress >= 1.0) {
+        animProgress = 1.0;
+        isAnimating = false;
+        const resetIcon = "fa-solid fa-rotate-right";
+        document.getElementById("play-icon").className = resetIcon + " mr-1.5";
+        document.getElementById("fs-play-icon").className = resetIcon;
+        document.getElementById("play-text").innerText = "再次播放";
+        document.getElementById("fs-play-text").innerText = "重播";
+    }
+
+    drawPath();
+
+    if (isAnimating) {
+        requestAnimationFrame(animationLoop);
+    }
+}
+
+function renderAnimationStep(geometry) {
+    // 这里的 transform 逻辑需要与 renderer.draw 内部一致，故我们可以重构 renderer 以暴露获取 transform 的方法
+    // 但为简化实现，我们直接让 renderer.draw 返回其内部闭包计算出的坐标转换函数，或者由 renderer 托管。
+    // 在本实现中，我们直接在 draw 函数结束后调用 drawTracker。
+    
+    const pad = 35;
+    const canvas = renderer.canvas;
+    const { nodes } = geometry;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    nodes.forEach(p => {
+        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    });
+    const w = maxX - minX || 1; const h = maxY - minY || 1;
+    const scale = Math.min((canvas.width - 2 * pad) / w, (canvas.height - 2 * pad) / h, 1.5);
+    const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
+    const offsetY = (canvas.height - h * scale) / 2 - minY * scale;
+
+    const transform = (px, py) => {
+        const ax = px * scale + offsetX; const ay = py * scale + offsetY;
+        if (!document.fullscreenElement) return { x: ax, y: ay };
+        const cx = canvas.width / 2; const cy = canvas.height / 2;
+        return {
+            x: (ax - cx) * renderer.zoomFactor + cx + renderer.panX,
+            y: (ay - cy) * renderer.zoomFactor + cy + renderer.panY
+        };
+    };
+
+    const fFactor = document.fullscreenElement ? renderer.zoomFactor : 1.0;
+    
+    // 执行绘制并获取当前位置的状态信息
+    const info = renderer.drawTracker(geometry, animProgress, transform, fFactor);
+    
+    if (info) {
+        // 1. 刚刚的动作
+        document.getElementById("overlay-prev-move").innerText = info.prevMove;
+
+        // 2. 当前滑行状态
+        document.getElementById("overlay-state").innerText = info.state;
+
+        // 3. 下一个动作
+        document.getElementById("overlay-next-move").innerText = info.nextMove;
+
+        document.getElementById("anim-progress-bar").style.width = `${animProgress * 100}%`;
+    }
 }
 
 function toggleFullscreen() {
@@ -295,8 +472,97 @@ function toggleFullscreen() {
     }
 }
 
+function setPlaybackSpeed(speed) {
+    playbackSpeed = speed;
+    document.getElementById("speed-05").classList.toggle("active", speed === 0.5);
+    document.getElementById("speed-10").classList.toggle("active", speed === 1.0);
+}
+
 function initInteraction() {
     const canvas = renderer.canvas;
+
+    // --- 进度条交互逻辑 ---
+    const progressContainer = document.getElementById("progress-container");
+    const tooltip = document.getElementById("progress-tooltip");
+
+    const handleProgressJump = (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const progress = Math.max(0, Math.min(1, x / rect.width));
+        animProgress = progress;
+        // 核心：直接强制触发重绘，不等待下一帧，保证极速跟手
+        drawPath();
+    };
+
+    progressContainer.addEventListener("mousedown", (e) => {
+        isDraggingProgress = true;
+        handleProgressJump(e);
+        
+        const onMouseMove = (moveEvent) => {
+            if (isDraggingProgress) handleProgressJump(moveEvent);
+        };
+        
+        const onMouseUp = () => {
+            isDraggingProgress = false;
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+            // 如果是在播放状态下松开，重置最后时间戳防止进度跳变
+            if (isAnimating) lastAnimTime = performance.now();
+        };
+        
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+    });
+
+    progressContainer.addEventListener("mousemove", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const hoverProgress = Math.max(0, Math.min(1, x / rect.width));
+        
+        tooltip.style.opacity = "1";
+        tooltip.style.left = `${x}px`;
+        
+        // 基于 DOM 查找实现更精准的 Tooltip
+        const targetSeg = document.elementFromPoint(e.clientX, rect.top + rect.height/2);
+        if (targetSeg && targetSeg.classList.contains('timeline-segment')) {
+            const isLeft = targetSeg.dataset.state[0] === 'L';
+            const footText = isLeft ? "左脚" : "右脚";
+            const footColor = isLeft ? "text-sky-400" : "text-orange-400";
+
+            tooltip.innerHTML = `
+                <div class="flex flex-col space-y-1 text-[11px] font-sans">
+                    <div class="flex items-center justify-between space-x-4 border-b border-slate-800 pb-1">
+                        <span class="${footColor} font-black font-mono text-xs">${targetSeg.dataset.state}</span>
+                        <span class="text-slate-400 scale-90">${footText}滑行</span>
+                    </div>
+                    <div class="flex items-center justify-between space-x-4">
+                        <span class="text-slate-500">即将执行:</span>
+                        <span class="text-slate-200 font-semibold truncate max-w-[100px]">${targetSeg.dataset.move}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            tooltip.innerHTML = `<span class="text-sky-300 font-mono font-bold">${Math.round(hoverProgress * 100)}%</span>`;
+        }
+    });
+
+    progressContainer.addEventListener("mouseleave", () => {
+        tooltip.style.opacity = "0";
+    });
+
+    // --- 键盘快捷键逻辑 ---
+    window.addEventListener("keydown", (e) => {
+        // 排除在输入框内的情况
+        if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+
+        if (e.code === "Space") {
+            e.preventDefault();
+            toggleAnimation();
+        } else if (e.code === "KeyF") {
+            e.preventDefault();
+            toggleFullscreen();
+        }
+    });
 
     canvas.addEventListener("wheel", (e) => {
         if (!document.fullscreenElement) return;

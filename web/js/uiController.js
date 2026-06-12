@@ -44,21 +44,38 @@ export function updateStats(path, undoCallback) {
     const trail = document.getElementById("choreography-trail");
     trail.innerHTML = "";
     path.forEach((step, idx) => {
+        // 绘制用刃状态节点 (天蓝微光)
         const stateNode = document.createElement("span");
-        stateNode.className = "px-2.5 py-1 text-xs font-bold font-mono tracking-wider bg-sky-950 text-sky-300 rounded-md border border-sky-800 glow-ice";
+        stateNode.className = "px-2.5 py-1 text-xs font-bold font-mono tracking-wider bg-sky-950 text-sky-300 rounded-md border border-sky-800 glow-ice flex items-center";
         stateNode.innerText = step.state;
         trail.appendChild(stateNode);
 
         if (step.move) {
-            const arrow = document.createElement("span");
-            arrow.className = "text-[10px] text-slate-500 flex flex-col items-center px-1";
+            // 1. 动作节点前置衔接箭头 (柔和暗灰)
+            const preArrow = document.createElement("span");
+            preArrow.className = "text-[9px] text-slate-600 self-center px-0.5";
+            preArrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            trail.appendChild(preArrow);
+
+            // 2. 橙色 LED 动作转换节点
+            const actNode = document.createElement("div");
+            // 内置柔和的 amber 发光滤镜与投影
+            actNode.className = "flex items-center space-x-1.5 px-2.5 py-1 bg-amber-950/40 border border-amber-500/40 rounded-md shadow-[0_0_10px_rgba(245,158,11,0.25)] text-amber-400 text-[10px] font-semibold";
+            
             const miniName = step.move.name.split(" ")[0];
-            arrow.innerHTML = `
-                <i class="fa-solid fa-chevron-right"></i>
-                <span class="text-[8px] text-slate-400 scale-90 text-center leading-tight">
-                    ${miniName}<br/>${step.move.difficulty}级
-                </span>`;
-            trail.appendChild(arrow);
+            actNode.innerHTML = `
+                <span class="tracking-tight">${miniName}</span>
+                <span class="px-1 py-0.2 bg-amber-500 text-slate-950 rounded-[3px] text-[8px] font-extrabold leading-none scale-90 origin-right">
+                    ${step.move.difficulty}级
+                </span>
+            `;
+            trail.appendChild(actNode);
+
+            // 3. 动作节点后置衔接箭头
+            const postArrow = document.createElement("span");
+            postArrow.className = "text-[9px] text-slate-600 self-center px-0.5";
+            postArrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            trail.appendChild(postArrow);
         }
     });
 

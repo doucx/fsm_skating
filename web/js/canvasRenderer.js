@@ -199,6 +199,70 @@ export class CanvasRenderer {
         ctx.fill();
     }
 
+    drawTracker(geometry, progress, transform, fFactor) {
+        const { arcs } = geometry;
+        if (!arcs || arcs.length === 0) return null;
+
+        // 1. 根据总弧长计算当前 progress 落在哪个 arc 上
+        const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+        let targetLen = totalLength * progress;
+        let currentLen = 0;
+        let targetArc = arcs[arcs.length - 1];
+        let localProgress = 1.0;
+
+        let targetIdx = arcs.length - 1;
+        for (let i = 0; i < arcs.length; i++) {
+            const arc = arcs[i];
+            const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
+            if (currentLen + arcLen >= targetLen) {
+                targetArc = arc;
+                targetIdx = i;
+                localProgress = (targetLen - currentLen) / arcLen;
+                break;
+            }
+            currentLen += arcLen;
+        }
+
+        // 2. 计算插值坐标
+        const currentAngle = targetArc.startAngle + (targetArc.endAngle - targetArc.startAngle) * localProgress;
+        const worldX = targetArc.cx + targetArc.R * Math.cos(currentAngle);
+        const worldY = targetArc.cy + targetArc.R * Math.sin(currentAngle);
+        const pos = transform(worldX, worldY);
+
+        // 3. 绘制追踪球 (冰晶小球)
+        const ctx = this.ctx;
+        const isLeft = targetArc.state[0] === 'L';
+        const ballColor = isLeft ? "56, 189, 248" : "249, 115, 22";
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 8 * fFactor, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${ballColor}, 0.9)`;
+        ctx.shadowBlur = 15 * fFactor;
+        ctx.shadowColor = `rgba(${ballColor}, 0.8)`;
+        ctx.fill();
+        
+        // 内核白光
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 3 * fFactor, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.restore();
+
+        // 3.5 获取高精度语义上下文
+        // 刚刚的动作：也就是如何转移到 targetArc 的，对应的正是前一个 arc 结尾处所带的 move
+        const prevMoveName = (targetIdx > 0 && arcs[targetIdx - 1].move) ? arcs[targetIdx - 1].move.name : "无";
+        
+        // 下一个动作：即在 targetArc 滑行终点即将执行的 move
+        const nextMoveName = targetArc.move ? targetArc.move.name : "无";
+
+        return {
+            state: targetArc.state,
+            prevMove: prevMoveName,
+            nextMove: nextMoveName
+        };
+    }
+
     _drawISUSymbol(ctx, pt, category, fFactor = 1.0) {
         ctx.save();
         ctx.strokeStyle = "#ffffff";
