@@ -1,5 +1,4 @@
 import os
-import sys
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
@@ -8,12 +7,17 @@ from pydantic import BaseModel
 
 # 重定向导入路径到新的 DDD 层次结构
 from fsm_skating.domain.models import State
-from fsm_skating.services.engine import ChoreographyEngine, VerificationResponse, MoveOption, Move
+from fsm_skating.services.engine import (
+    ChoreographyEngine,
+    VerificationResponse,
+    MoveOption,
+    Move,
+)
 
 app = FastAPI(
     title="❄️ FSM Skating API",
     description="花样滑冰步法智能编排与校验计算核心 REST API 端口",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 app.add_middleware(
@@ -65,7 +69,7 @@ def get_transitions(state_str: str, max_difficulty: int = Query(5, ge=1, le=5)):
         state = State.from_string(state_str)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"无效的状态代码: {e}")
-    
+
     return engine.get_possible_transitions(state, max_difficulty)
 
 
@@ -73,7 +77,7 @@ def get_transitions(state_str: str, max_difficulty: int = Query(5, ge=1, le=5)):
 def generate_sequence(request: GenerateRequest):
     if not engine:
         raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
-    
+
     start_state_obj = None
     if request.start_state:
         try:
@@ -81,13 +85,15 @@ def generate_sequence(request: GenerateRequest):
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"无效的起始滑行状态: {e}")
 
-    path = engine.generate_sequence(request.steps, request.max_difficulty, start_state_obj)
+    path = engine.generate_sequence(
+        request.steps, request.max_difficulty, start_state_obj
+    )
     if path is None:
         raise HTTPException(
-            status_code=422, 
-            detail="在给定的动作最大难度限制下，无法规划出不进入死胡同的滑行链路。请尝试调大难度上限。"
+            status_code=422,
+            detail="在给定的动作最大难度限制下，无法规划出不进入死胡同的滑行链路。请尝试调大难度上限。",
         )
-    
+
     return [GeneratedStep(state=s, move=m) for s, m in path]
 
 
@@ -106,4 +112,5 @@ if os.path.exists(web_dir):
 def start():
     """供入口脚本调用，启动 Uvicorn 服务"""
     import uvicorn
+
     uvicorn.run("fsm_skating.api.main:app", host="127.0.0.1", port=8000, reload=True)

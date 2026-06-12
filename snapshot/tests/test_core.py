@@ -4,6 +4,7 @@ from pydantic import ValidationError
 # 从新的领域层 domain 模块引入核心类
 from fsm_skating.domain.models import State, get_relative_conditions
 
+
 def test_state_creation():
     s = State(foot="L", direction="F", edge="O")
     assert str(s) == "LFO"
@@ -11,15 +12,17 @@ def test_state_creation():
     assert s.direction == "F"
     assert s.edge == "O"
 
+
 def test_state_invalid_creation():
     with pytest.raises(ValidationError):
         State(foot="X", direction="F", edge="O")
-    
+
     with pytest.raises(ValidationError):
         State(foot="L", direction="U", edge="O")
 
     with pytest.raises(ValueError, match="Invalid state format"):
         State.from_string("LF")
+
 
 def test_relative_conditions():
     s1 = State.from_string("LFO")

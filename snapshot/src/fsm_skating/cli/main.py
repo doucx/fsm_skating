@@ -1,11 +1,11 @@
 import sys
 import argparse
 import os
-from typing import List, Tuple, Dict, Any, Optional
+from typing import List, Tuple, Optional
 
 # 更新引入声明，分别引入领域层模型与服务层引擎
 from fsm_skating.domain.models import State, ALL_STATES
-from fsm_skating.services.engine import ChoreographyEngine, Move, MoveOption
+from fsm_skating.services.engine import ChoreographyEngine, Move
 
 
 def get_state_desc(state: State) -> str:

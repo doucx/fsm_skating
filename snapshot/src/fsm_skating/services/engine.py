@@ -126,9 +126,7 @@ class ChoreographyEngine:
                             MoveOption(target_state=target_state, move=move_obj)
                         )
 
-        results.sort(
-            key=lambda x: (x.move.difficulty, x.move.name)
-        )
+        results.sort(key=lambda x: (x.move.difficulty, x.move.name))
         return results
 
     def verify_sequence(self, sequence_str: str) -> VerificationResponse:
@@ -198,9 +196,7 @@ class ChoreographyEngine:
                     error=f"无法识别的物理转移: 从状态 {s_from} 无法直接通过任何已知动作转移到 {s_to}。",
                 )
 
-            matched_moves.sort(
-                key=lambda m: (m.difficulty, m.name)
-            )
+            matched_moves.sort(key=lambda m: (m.difficulty, m.name))
 
             transitions_details.append(
                 TransitionDetail(
