@@ -239,9 +239,7 @@ class ChoreographyEngine:
         动作驱动校验器：输入动作 ID 序列，自动演化滑行状态并进行全段物理合法性校验。
         """
         if not move_ids:
-            return MoveVerificationResponse(
-                valid=False, error="动作 ID 序列不能为空。"
-            )
+            return MoveVerificationResponse(valid=False, error="动作 ID 序列不能为空。")
 
         # 缓存配置字典，便于 O(1) 检索
         move_db = {m["id"]: m for m in self.moves}
@@ -275,7 +273,10 @@ class ChoreographyEngine:
             # 1. 起滑方向与用刃约束检查
             constraints = move_data.get("start_constraints")
             if constraints:
-                if "dir" in constraints and current_state.direction != constraints["dir"]:
+                if (
+                    "dir" in constraints
+                    and current_state.direction != constraints["dir"]
+                ):
                     return MoveVerificationResponse(
                         valid=False,
                         error=f"第 {idx + 1} 步动作校验失败：动作 '{move_data['name']}' 要求以 '{constraints['dir']}' 向起滑，但当前滑行状态为 '{current_state}'。",
@@ -287,7 +288,10 @@ class ChoreographyEngine:
                     )
 
             # 2. 调用第一阶段新引入的状态推导核心演算下一个状态
-            from fsm_skating.domain.models import calculate_next_state, get_natural_curvature
+            from fsm_skating.domain.models import (
+                calculate_next_state,
+                get_natural_curvature,
+            )
 
             conditions = move_data["conditions"]
             next_state = calculate_next_state(current_state, conditions)

@@ -17,19 +17,19 @@ def test_verify_move_sequence_success(engine):
     # LFO 起始
     start = State.from_string("LFO")
     moves = ["stroke", "forward_inside_three_turn"]
-    
+
     res = engine.verify_move_sequence(moves, start_state=start)
-    
+
     assert res.valid is True
     assert len(res.trace) == 2
-    
+
     # 第一步: LFO --(Stroke)--> RFI
     # Stroke 条件: 异脚(F), 同向(T), 变刃(F)
     step1 = res.trace[0]
     assert str(step1.from_state) == "LFO"
     assert step1.move.id == "stroke"
     assert str(step1.to_state) == "RFI"
-    
+
     # 第二步: RFI --(Forward Inside Three-Turn)--> RBO
     # Three-Turn 条件: 同脚(T), 变向(F), 变刃(F)
     # 且 RFI 符合该动作的 Start Constraints (F, I)
@@ -37,7 +37,7 @@ def test_verify_move_sequence_success(engine):
     assert str(step2.from_state) == "RFI"
     assert step2.move.id == "forward_inside_three_turn"
     assert str(step2.to_state) == "RBO"
-    
+
     # 难度: 1 (Stroke) + 3 (FI 3-Turn) = 4
     assert res.total_difficulty == 4
 
@@ -47,7 +47,7 @@ def test_verify_move_sequence_default_start(engine):
     # 首个动作是前外转三，其约束是 F, O。系统应默认给出 LFO。
     moves = ["forward_outside_three_turn"]
     res = engine.verify_move_sequence(moves)
-    
+
     assert res.valid is True
     assert str(res.trace[0].from_state) == "LFO"
 
@@ -58,9 +58,9 @@ def test_verify_move_sequence_failure_constraints(engine):
     start = State.from_string("LBO")
     # 尝试做一个必须前滑起步的动作
     moves = ["forward_outside_three_turn"]
-    
+
     res = engine.verify_move_sequence(moves, start_state=start)
-    
+
     assert res.valid is False
     assert "要求以 'F' 向起滑" in res.error
     assert "当前滑行状态为 'LBO'" in res.error
@@ -71,9 +71,9 @@ def test_verify_move_sequence_complex_chain(engine):
     # 序列: LFO -> (Stroke) -> RFI -> (FI Mohawk) -> LBI -> (BI Three-Turn) -> LFO
     moves = ["stroke", "forward_inside_mohawk", "backward_inside_three_turn"]
     start = State.from_string("LFO")
-    
+
     res = engine.verify_move_sequence(moves, start_state=start)
-    
+
     assert res.valid is True
     assert str(res.trace[0].to_state) == "RFI"
     assert str(res.trace[1].to_state) == "LBI"
