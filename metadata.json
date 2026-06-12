@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 升级前端沙盒 UI 以完美支持双模式校验与合规轨迹一键载入画布", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781234449.5078, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat(web): 实现双模式校验器 UI 与歧义路径可视化展示", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781234831.2851367, "duration_ms": 0}}
