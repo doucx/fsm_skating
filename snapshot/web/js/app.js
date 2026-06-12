@@ -10,7 +10,8 @@ let renderer;
 let isAnimating = false;
 let animProgress = 0; // 0.0 to 1.0
 let lastAnimTime = 0;
-const ANIM_DURATION_PER_STEP = 1500; // 每步滑行 1.5 秒
+let playbackSpeed = 1.0;
+const BASE_ANIM_DURATION = 1500; // 每步滑行基准 1.5 秒
 
 document.addEventListener("DOMContentLoaded", () => {
     renderer = new CanvasRenderer("skate-canvas");
@@ -30,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.generateSequence = generateSequence;
     window.toggleFullscreen = toggleFullscreen;
     window.toggleAnimation = toggleAnimation;
+    window.setPlaybackSpeed = setPlaybackSpeed;
     window.chooseNextMove = chooseNextMove;
     window.copyTrajectorySource = copyTrajectorySource;
     window.importTrajectorySource = importTrajectorySource;
@@ -333,7 +335,8 @@ function animationLoop(timestamp) {
     lastAnimTime = timestamp;
 
     const totalSteps = Math.max(1, path.length - 1);
-    const totalDuration = totalSteps * ANIM_DURATION_PER_STEP;
+    // 倍速影响总时长计算
+    const totalDuration = (totalSteps * BASE_ANIM_DURATION) / playbackSpeed;
     
     animProgress += deltaTime / totalDuration;
 
@@ -405,8 +408,69 @@ function toggleFullscreen() {
     }
 }
 
+function setPlaybackSpeed(speed) {
+    playbackSpeed = speed;
+    document.getElementById("speed-05").classList.toggle("active", speed === 0.5);
+    document.getElementById("speed-10").classList.toggle("active", speed === 1.0);
+}
+
 function initInteraction() {
     const canvas = renderer.canvas;
+
+    // --- 进度条交互逻辑 ---
+    const progressContainer = document.getElementById("progress-container");
+    const tooltip = document.getElementById("progress-tooltip");
+
+    const handleProgressJump = (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const progress = Math.max(0, Math.min(1, x / rect.width));
+        animProgress = progress;
+        drawPath();
+    };
+
+    progressContainer.addEventListener("mousedown", (e) => {
+        handleProgressJump(e);
+        const onMouseMove = (moveEvent) => handleProgressJump(moveEvent);
+        const onMouseUp = () => {
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+        };
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+    });
+
+    progressContainer.addEventListener("mousemove", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const hoverProgress = Math.max(0, Math.min(1, x / rect.width));
+        
+        tooltip.style.opacity = "1";
+        tooltip.style.left = `${x}px`;
+        
+        // 预览内容
+        const stepIdx = Math.floor(hoverProgress * (path.length - 1));
+        const moveName = path[stepIdx]?.move?.name || "结束";
+        tooltip.innerText = `${Math.round(hoverProgress * 100)}% - ${moveName}`;
+    });
+
+    progressContainer.addEventListener("mouseleave", () => {
+        tooltip.style.opacity = "0";
+    });
+
+    // --- 键盘快捷键逻辑 ---
+    window.addEventListener("keydown", (e) => {
+        // 排除在输入框内的情况
+        if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+
+        if (e.code === "Space") {
+            e.preventDefault();
+            toggleAnimation();
+        } else if (e.code === "KeyF") {
+            e.preventDefault();
+            toggleFullscreen();
+        }
+    });
 
     canvas.addEventListener("wheel", (e) => {
         if (!document.fullscreenElement) return;

@@ -61,3 +61,27 @@ body {
     border-radius: 50%;
     box-shadow: 0 0 10px #38bdf8;
 }
+
+.progress-container {
+    cursor: pointer;
+    transition: height 0.2s;
+}
+.progress-container:hover {
+    height: 6px;
+}
+.progress-container:hover #anim-progress-bar::after {
+    transform: scale(1.5);
+}
+
+/* 进度预览 Tooltip */
+#progress-tooltip {
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: opacity 0.2s;
+}
+
+.speed-btn.active {
+    background-color: rgba(56, 189, 248, 0.25);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.5);
+}
