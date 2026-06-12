@@ -34,7 +34,7 @@ def test_rotation_direction_inference(engine):
     assert len(lbi_moves) >= 2
     
     three_turn = [m for m in lbi_moves if "three_turn" in m["move"]["id"]][0]
-    bracket = [m for m in lbi_moves if m["move"]["id"] == "bracket"][0]
+    bracket = [m for m in lbi_moves if "bracket" in m["move"]["id"]][0]
     
     assert three_turn["move"]["rotation_dir"] == "CCW"
     assert bracket["move"]["rotation_dir"] == "CW"
