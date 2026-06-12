@@ -1,7 +1,16 @@
+categories:
+  three_turn: "转三步 (Three-Turn)"
+  bracket: "括弧步 (Bracket)"
+  rocker: "摇滚步 (Rocker)"
+  counter: "计数步 (Counter)"
+  mohawk: "莫霍克步 (Mohawk)"
+  choctaw: "乔克陶步 (Choctaw)"
+
 moves:
   # --- 变刃步 (Change of Edge) ---
   - id: "change_of_edge"
     name: "变刃滑行 (Change of Edge)"
+    category: "change_of_edge"
     difficulty: 1
     conditions:
       same_foot: true
@@ -11,6 +20,7 @@ moves:
   # --- 转三步细分 (Three-Turn) ---
   - id: "forward_outside_three_turn"
     name: "前外转三 (Forward Outside Three-Turn)"
+    category: "three_turn"
     difficulty: 2
     turn_rotation: "natural"
     conditions:
@@ -23,6 +33,7 @@ moves:
 
   - id: "forward_inside_three_turn"
     name: "前内转三 (Forward Inside Three-Turn)"
+    category: "three_turn"
     difficulty: 3
     turn_rotation: "natural"
     conditions:
@@ -35,6 +46,7 @@ moves:
 
   - id: "backward_outside_three_turn"
     name: "后外转三 (Backward Outside Three-Turn)"
+    category: "three_turn"
     difficulty: 5
     turn_rotation: "natural"
     conditions:
@@ -47,6 +59,7 @@ moves:
 
   - id: "backward_inside_three_turn"
     name: "后内转三 (Backward Inside Three-Turn)"
+    category: "three_turn"
     difficulty: 4
     turn_rotation: "natural"
     conditions:
@@ -57,41 +70,169 @@ moves:
       dir: "B"
       edge: "I"
 
-  # --- 括弧步 (Bracket) ---
-  - id: "bracket"
-    name: "括弧步 (Bracket)"
+  # --- 括弧步细分 (Bracket) ---
+  - id: "forward_outside_bracket"
+    name: "前外括弧 (Forward Outside Bracket)"
+    category: "bracket"
     difficulty: 4
     turn_rotation: "opposite"
     conditions:
       same_foot: true
       same_dir: false
       same_edge: false
-    # 括弧步的物理转移状态条件与转三步相同，只是旋转方向不同。
-    # 这里我们允许不加 start_constraints，作为一个通用匹配项。
+    start_constraints:
+      dir: "F"
+      edge: "O"
 
-  # --- 摇滚步 (Rocker) ---
-  - id: "rocker"
-    name: "摇滚步 (Rocker)"
+  - id: "forward_inside_bracket"
+    name: "前内括弧 (Forward Inside Bracket)"
+    category: "bracket"
+    difficulty: 4
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_bracket"
+    name: "后外括弧 (Backward Outside Bracket)"
+    category: "bracket"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_bracket"
+    name: "后内括弧 (Backward Inside Bracket)"
+    category: "bracket"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 摇滚步细分 (Rocker) ---
+  - id: "forward_outside_rocker"
+    name: "前外摇滚 (Forward Outside Rocker)"
+    category: "rocker"
     difficulty: 4
     turn_rotation: "natural"
     conditions:
       same_foot: true
       same_dir: false
       same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "O"
 
-  # --- 计数步 (Counter) ---
-  - id: "counter"
-    name: "计数步 (Counter)"
+  - id: "forward_inside_rocker"
+    name: "前内摇滚 (Forward Inside Rocker)"
+    category: "rocker"
+    difficulty: 4
+    turn_rotation: "natural"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_rocker"
+    name: "后外摇滚 (Backward Outside Rocker)"
+    category: "rocker"
+    difficulty: 5
+    turn_rotation: "natural"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_rocker"
+    name: "后内摇滚 (Backward Inside Rocker)"
+    category: "rocker"
+    difficulty: 5
+    turn_rotation: "natural"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 计数步细分 (Counter) ---
+  - id: "forward_outside_counter"
+    name: "前外计数 (Forward Outside Counter)"
+    category: "counter"
     difficulty: 4
     turn_rotation: "opposite"
     conditions:
       same_foot: true
       same_dir: false
       same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "O"
+
+  - id: "forward_inside_counter"
+    name: "前内计数 (Forward Inside Counter)"
+    category: "counter"
+    difficulty: 4
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_counter"
+    name: "后外计数 (Backward Outside Counter)"
+    category: "counter"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_counter"
+    name: "后内计数 (Backward Inside Counter)"
+    category: "counter"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "I"
 
   # --- 标准蹬冰步 (Stroke) ---
   - id: "stroke"
     name: "标准蹬冰步 (Standard Stroke)"
+    category: "stroke"
     difficulty: 1
     conditions:
       same_foot: false
@@ -101,6 +242,7 @@ moves:
   # --- 交叉步 (Cross Roll) ---
   - id: "cross_roll"
     name: "交叉步 (Cross Roll)"
+    category: "cross_roll"
     difficulty: 2
     conditions:
       same_foot: false
@@ -110,6 +252,7 @@ moves:
   # --- 莫霍克步细分 (Mohawk) ---
   - id: "forward_inside_mohawk"
     name: "前内莫霍克 (Forward Inside Mohawk)"
+    category: "mohawk"
     difficulty: 2
     turn_rotation: "natural"
     conditions:
@@ -122,6 +265,7 @@ moves:
 
   - id: "forward_outside_mohawk"
     name: "前外莫霍克 (Forward Outside Mohawk)"
+    category: "mohawk"
     difficulty: 3
     turn_rotation: "natural"
     conditions:
@@ -132,12 +276,81 @@ moves:
       dir: "F"
       edge: "O"
 
-  # --- 乔克陶步 (Choctaw) ---
-  - id: "choctaw"
-    name: "乔克陶步 (Choctaw)"
+  - id: "backward_outside_mohawk"
+    name: "后外莫霍克 (Backward Outside Mohawk)"
+    category: "mohawk"
+    difficulty: 4
+    turn_rotation: "natural"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_mohawk"
+    name: "后内莫霍克 (Backward Inside Mohawk)"
+    category: "mohawk"
+    difficulty: 4
+    turn_rotation: "natural"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 乔克陶步细分 (Choctaw) ---
+  - id: "forward_outside_choctaw"
+    name: "前外乔克陶 (Forward Outside Choctaw)"
+    category: "choctaw"
     difficulty: 4
     turn_rotation: "opposite"
     conditions:
       same_foot: false
       same_dir: false
       same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "O"
+
+  - id: "forward_inside_choctaw"
+    name: "前内乔克陶 (Forward Inside Choctaw)"
+    category: "choctaw"
+    difficulty: 4
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_choctaw"
+    name: "后外乔克陶 (Backward Outside Choctaw)"
+    category: "choctaw"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_choctaw"
+    name: "后内乔克陶 (Backward Inside Choctaw)"
+    category: "choctaw"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "I"

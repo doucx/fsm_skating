@@ -34,7 +34,7 @@ def test_rotation_direction_inference(engine):
     assert len(lbi_moves) >= 2
     
     three_turn = [m for m in lbi_moves if "three_turn" in m["move"]["id"]][0]
-    bracket = [m for m in lbi_moves if m["move"]["id"] == "bracket"][0]
+    bracket = [m for m in lbi_moves if "bracket" in m["move"]["id"]][0]
     
     assert three_turn["move"]["rotation_dir"] == "CCW"
     assert bracket["move"]["rotation_dir"] == "CW"
@@ -60,3 +60,16 @@ def test_generate_sequence(engine):
     for i in range(len(path) - 1):
         move = path[i][1]
         assert move["difficulty"] <= 3
+
+def test_library_integrity(engine):
+    report = engine.check_library_integrity()
+    
+    # 断言 6 大类别均被引擎正常捕获并加载
+    core_categories = ["three_turn", "bracket", "rocker", "counter", "mohawk", "choctaw"]
+    for cat in core_categories:
+        assert cat in report
+        # 断言每一个分类都已经实现 100% 全边缘方向 (FO, FI, BO, BI) 覆盖
+        assert len(report[cat]["implemented"]) == 4
+        assert len(report[cat]["missing"]) == 0
+        # 此时不应该再有依赖 generic 通用动作兜底的情况
+        assert report[cat]["generic_count"] == 0
