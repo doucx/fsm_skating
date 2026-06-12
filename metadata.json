@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] fix(web): 修复 2D 轨迹在缩放时圆弧连接断裂与标注不缩放的 Bug", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781231659.3139656, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] fix(web): 移除画布点击切换全屏功能以消除拖拽冲突", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781231753.2403355, "duration_ms": 0}}
