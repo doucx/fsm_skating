@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "Capture: M moves_config.yaml", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781235839.4627337, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat: 引入步法几何差异化配置以解决回路轨迹重叠问题", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781236462.2704587, "duration_ms": 0}}

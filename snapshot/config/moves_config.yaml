@@ -16,12 +16,15 @@ moves:
       same_foot: true
       same_dir: true
       same_edge: false
+    geometry_config:
+      radius_factor: 1.0
+      sweep_angle_factor: 1.0
 
   # --- 转三步细分 (Three-Turn) - 基础步法 ---
   - id: "forward_outside_three_turn"
     name: "前外转三 (Forward Outside Three-Turn)"
     category: "three_turn"
-    difficulty: 1   # [调整] 最基础的入门转三
+    difficulty: 1
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -30,11 +33,14 @@ moves:
     start_constraints:
       dir: "F"
       edge: "O"
+    geometry_config:
+      radius_factor: 0.85     # 转三步较为短促、圆滑
+      sweep_angle_factor: 0.95
 
   - id: "forward_inside_three_turn"
     name: "前内转三 (Forward Inside Three-Turn)"
     category: "three_turn"
-    difficulty: 2   # [调整] 略难于前外
+    difficulty: 2
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -43,11 +49,14 @@ moves:
     start_constraints:
       dir: "F"
       edge: "I"
+    geometry_config:
+      radius_factor: 0.85
+      sweep_angle_factor: 0.95
 
   - id: "backward_outside_three_turn"
     name: "后外转三 (Backward Outside Three-Turn)"
     category: "three_turn"
-    difficulty: 3   # [调整] 基础转三中最难的一个，但仍不是复杂步法
+    difficulty: 3
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -56,11 +65,14 @@ moves:
     start_constraints:
       dir: "B"
       edge: "O"
+    geometry_config:
+      radius_factor: 0.85
+      sweep_angle_factor: 0.95
 
   - id: "backward_inside_three_turn"
     name: "后内转三 (Backward Inside Three-Turn)"
     category: "three_turn"
-    difficulty: 2   # [调整] 比后外转三好控制
+    difficulty: 2
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -69,6 +81,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "I"
+    geometry_config:
+      radius_factor: 0.85
+      sweep_angle_factor: 0.95
 
   # --- 括弧步细分 (Bracket) - ISU 复杂步法 ---
   - id: "forward_outside_bracket"
@@ -83,6 +98,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "O"
+    geometry_config:
+      radius_factor: 0.9
+      sweep_angle_factor: 1.0
 
   - id: "forward_inside_bracket"
     name: "前内括弧 (Forward Inside Bracket)"
@@ -96,6 +114,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "I"
+    geometry_config:
+      radius_factor: 0.9
+      sweep_angle_factor: 1.0
 
   - id: "backward_outside_bracket"
     name: "后外括弧 (Backward Outside Bracket)"
@@ -109,6 +130,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "O"
+    geometry_config:
+      radius_factor: 0.95
+      sweep_angle_factor: 1.0
 
   - id: "backward_inside_bracket"
     name: "后内括弧 (Backward Inside Bracket)"
@@ -122,6 +146,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "I"
+    geometry_config:
+      radius_factor: 0.95
+      sweep_angle_factor: 1.0
 
   # --- 摇滚步细分 (Rocker) - ISU 复杂步法 ---
   - id: "forward_outside_rocker"
@@ -136,6 +163,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.0
+      sweep_angle_factor: 1.05
 
   - id: "forward_inside_rocker"
     name: "前内摇滚 (Forward Inside Rocker)"
@@ -149,6 +179,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.0
+      sweep_angle_factor: 1.05
 
   - id: "backward_outside_rocker"
     name: "后外摇滚 (Backward Outside Rocker)"
@@ -162,6 +195,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.05
+      sweep_angle_factor: 1.05
 
   - id: "backward_inside_rocker"
     name: "后内摇滚 (Backward Inside Rocker)"
@@ -175,6 +211,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.05
+      sweep_angle_factor: 1.05
 
   # --- 计数步细分 (Counter) - ISU 复杂步法 ---
   - id: "forward_outside_counter"
@@ -189,6 +228,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.1
+      sweep_angle_factor: 1.1
 
   - id: "forward_inside_counter"
     name: "前内计数 (Forward Inside Counter)"
@@ -202,6 +244,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.1
+      sweep_angle_factor: 1.1
 
   - id: "backward_outside_counter"
     name: "后外计数 (Backward Outside Counter)"
@@ -215,6 +260,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.15
+      sweep_angle_factor: 1.1
 
   - id: "backward_inside_counter"
     name: "后内计数 (Backward Inside Counter)"
@@ -228,6 +276,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.15
+      sweep_angle_factor: 1.1
 
   # --- 标准蹬冰步 (Stroke) ---
   - id: "stroke"
@@ -238,6 +289,9 @@ moves:
       same_foot: false
       same_dir: true
       same_edge: false
+    geometry_config:
+      radius_factor: 1.25     # 蹬冰步滑行更长、幅度更大
+      sweep_angle_factor: 1.15
 
   # --- 交叉步 (Cross Roll) ---
   - id: "cross_roll"
@@ -248,12 +302,15 @@ moves:
       same_foot: false
       same_dir: true
       same_edge: true
+    geometry_config:
+      radius_factor: 1.0
+      sweep_angle_factor: 1.1
 
   # --- 莫霍克步细分 (Mohawk) - 基础步法 ---
   - id: "forward_inside_mohawk"
     name: "前内莫霍克 (Forward Inside Mohawk)"
     category: "mohawk"
-    difficulty: 1   # [调整] 最常见的起滑过渡动作，极其基础
+    difficulty: 1
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -262,11 +319,14 @@ moves:
     start_constraints:
       dir: "F"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.35     # 莫霍克弧度明显放宽，用于起滑和滑行过渡
+      sweep_angle_factor: 1.25
 
   - id: "forward_outside_mohawk"
     name: "前外莫霍克 (Forward Outside Mohawk)"
     category: "mohawk"
-    difficulty: 3   # [调整] 外刃莫霍克需要更多控制力，较难但非复杂步
+    difficulty: 3
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -275,11 +335,14 @@ moves:
     start_constraints:
       dir: "F"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.35
+      sweep_angle_factor: 1.25
 
   - id: "backward_outside_mohawk"
     name: "后外莫霍克 (Backward Outside Mohawk)"
     category: "mohawk"
-    difficulty: 3   # [调整]
+    difficulty: 3
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -288,11 +351,14 @@ moves:
     start_constraints:
       dir: "B"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.35
+      sweep_angle_factor: 1.25
 
   - id: "backward_inside_mohawk"
     name: "后内莫霍克 (Backward Inside Mohawk)"
     category: "mohawk"
-    difficulty: 2   # [核心调整] 由原来的 4 降至 2。这是非常简单流畅的开式后滑变前滑动作。
+    difficulty: 2
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -301,6 +367,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.35
+      sweep_angle_factor: 1.25
 
   # --- 乔克陶步细分 (Choctaw) - ISU 复杂步法 ---
   - id: "forward_outside_choctaw"
@@ -315,6 +384,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.4
+      sweep_angle_factor: 1.3
 
   - id: "forward_inside_choctaw"
     name: "前内乔克陶 (Forward Inside Choctaw)"
@@ -328,6 +400,9 @@ moves:
     start_constraints:
       dir: "F"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.4
+      sweep_angle_factor: 1.3
 
   - id: "backward_outside_choctaw"
     name: "后外乔克陶 (Backward Outside Choctaw)"
@@ -341,6 +416,9 @@ moves:
     start_constraints:
       dir: "B"
       edge: "O"
+    geometry_config:
+      radius_factor: 1.4
+      sweep_angle_factor: 1.3
 
   - id: "backward_inside_choctaw"
     name: "后内乔克陶 (Backward Inside Choctaw)"
@@ -354,3 +432,6 @@ moves:
     start_constraints:
       dir: "B"
       edge: "I"
+    geometry_config:
+      radius_factor: 1.4
+      sweep_angle_factor: 1.3

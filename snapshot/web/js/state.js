@@ -37,24 +37,32 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
         const step = pathData[i];
         const stateStr = step.state;
 
+        // 动态读取动作特异物理参数因子，若无配置则降级使用标准系数 (1.0)
+        const geomConfig = step.move?.geometry_config || {};
+        const radiusFactor = geomConfig.radius_factor !== undefined ? geomConfig.radius_factor : 1.0;
+        const sweepAngleFactor = geomConfig.sweep_angle_factor !== undefined ? geomConfig.sweep_angle_factor : 1.0;
+
+        const currentR = R * radiusFactor;
+        const currentSweepAngle = sweepAngle * sweepAngleFactor;
+
         const curve = getCurvature(stateStr);
         const K = (curve === "CW") ? -1 : 1; // 1: CCW (左偏), -1: CW (右偏)
 
         // ===== 针对 Canvas Y轴向下坐标系的物理公式修正 =====
         // 1. 纠正圆心计算公式
-        const cx = x + K * R * Math.sin(theta);
-        const cy = y - K * R * Math.cos(theta);
+        const cx = x + K * currentR * Math.sin(theta);
+        const cy = y - K * currentR * Math.cos(theta);
 
         // 2. 纠正张角偏转方向
         const startAngle = Math.atan2(y - cy, x - cx);
-        const sweep = -K * sweepAngle; // CCW角度减小，CW角度增加
+        const sweep = -K * currentSweepAngle; // CCW角度减小，CW角度增加
         const endAngle = startAngle + sweep;
 
-        const nextX = cx + R * Math.cos(endAngle);
-        const nextY = cy + R * Math.sin(endAngle);
+        const nextX = cx + currentR * Math.cos(endAngle);
+        const nextY = cy + currentR * Math.sin(endAngle);
         const nextTheta = theta + sweep;
 
-        // 弧线 i 代表用刃状态 State i
+        // 弧线 i 代表用刃状态 State i，传递计算得到的特异性 R 参数以实现动态画弧
         arcs.push({
             startX: x,
             startY: y,
@@ -62,7 +70,7 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
             endY: nextY,
             cx,
             cy,
-            R,
+            R: currentR,
             startAngle,
             endAngle,
             anticlockwise: (K === 1), // K === 1 (CCW) 对应 Canvas 逆时针绘制
