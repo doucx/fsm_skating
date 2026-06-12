@@ -1,4 +1,3 @@
-import pytest
 from fsm_skating.cli.main import get_state_desc
 from fsm_skating.domain.models import State
 
