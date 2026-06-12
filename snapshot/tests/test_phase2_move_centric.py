@@ -1,43 +1,3 @@
-我们现在为第二阶段的核心功能——动作驱动（Move-Centric）校验器编写单元测试。这些测试将验证系统是否能根据一组步法名称准确还原选手的冰面轨迹，并能在违反物理约束时及时“报错”。
-
-## [WIP] test: 验证动作驱动校验器 (Move-Centric) 的全段推导逻辑
-
-### 用户需求
-需要确保 `verify_move_sequence` 方法能够正确处理动作序列的演算。包括：正确推导初始状态、按顺序演算中间状态、正确计算总难度，以及在动作起滑约束（如必须前滑起步但实际处于后滑状态）不匹配时给出清晰的错误提示。
-
-### 评论
-动作驱动校验是本系统的核心竞争力。通过测试，我们确保了即使用户不提供中间状态，系统也能通过物理规则“预见”选手的动作路径，这极大地降低了编排软件的使用门槛。
-
-### 目标
-1. 验证在未提供初始状态时，系统能根据首个动作的约束自动推导出合理的起点。
-2. 验证多步动作组合（如：标准蹬冰 -> 前内转三）的连续演化轨迹。
-3. 验证约束冲突检测：当一个要求“前滑”的动作被放置在“后滑”状态之后时，系统应拦截并报错。
-
-### 基本原理
-我们将构建针对 `engine.verify_move_sequence` 的多组测试场景。利用 `config/moves_config.yaml` 中定义的真实步法数据，检查返回的 `trace` 列表中每一个 `from_state`、`move` 和 `to_state` 是否符合逻辑。
-
-### 标签
-#intent/tooling #flow/ready #priority/medium
-#comp/tests #concept/executor #scope/core
-#ai/instruct
-#task/domain/testing
-#task/object/move-centric-verification-tests
-#task/action/implementation
-#task/state/continue #task/status/active
-
----
-
-### Script
-
-#### Acts 1: 创建动作驱动校验单元测试文件
-
-我们将新建 `tests/test_phase2_move_centric.py`，涵盖成功推演和约束失败等多种边界情况。
-
-~~~~~act
-write_file
-tests/test_phase2_move_centric.py
-~~~~~
-~~~~~python
 import pytest
 from fsm_skating.services.engine import ChoreographyEngine
 from fsm_skating.domain.models import State
@@ -119,9 +79,3 @@ def test_verify_move_sequence_complex_chain(engine):
     assert str(res.trace[1].to_state) == "LBI"
     assert str(res.trace[2].to_state) == "LFO"
     assert res.total_difficulty == 1 + 2 + 4  # 7
-~~~~~
-
-### 下一步建议
-1. **运行测试**：执行 `pytest tests/test_phase2_move_centric.py` 确保逻辑闭环。
-2. **开展第三阶段**：现在底层引擎已经“能掐会算”，我们可以开始升级 API 路由，将这个能力暴露给前端。我们将增加 `/api/verify/moves` 接口。
-3. **前端适配**：在第四阶段，我们需要在 Web 端增加输入动作序列的功能，并调用这个新接口展示演化轨迹。
