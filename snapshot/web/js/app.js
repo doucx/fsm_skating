@@ -127,6 +127,47 @@ function undoMove() {
     updateStats();
 }
 
+// 🎨 ISU 标准专业步法图标渲染器
+function drawISUSymbol(ctx, pt, category) {
+    ctx.save();
+    ctx.strokeStyle = "#ffffff";
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = "rgba(56, 189, 248, 0.8)";
+    ctx.lineWidth = 2;
+
+    if (category === "three_turn") {
+        // 绘制转三步：经典“3”字形尖角 (ξ)
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y - 12, 3, -Math.PI/2, Math.PI/2, false);
+        ctx.lineTo(pt.x - 2, pt.y - 9);
+        ctx.arc(pt.x, pt.y - 6, 3, -Math.PI/2, Math.PI/2, false);
+        ctx.stroke();
+    } else if (category === "bracket") {
+        // 绘制括弧步：经典的向外括弧尖角 ({)
+        ctx.beginPath();
+        ctx.moveTo(pt.x + 3, pt.y - 15);
+        ctx.quadraticCurveTo(pt.x - 1, pt.y - 15, pt.x - 1, pt.y - 11);
+        ctx.lineTo(pt.x - 1, pt.y - 10);
+        ctx.quadraticCurveTo(pt.x - 4, pt.y - 9, pt.x - 1, pt.y - 8);
+        ctx.lineTo(pt.x - 1, pt.y - 7);
+        ctx.quadraticCurveTo(pt.x - 1, pt.y - 3, pt.x + 3, pt.y - 3);
+        ctx.stroke();
+    } else if (category === "mohawk") {
+        // 绘制莫霍克步：交叉双脚足迹 (Double Footprints)
+        ctx.strokeStyle = "#fb923c"; 
+        ctx.shadowColor = "rgba(249, 115, 22, 0.8)";
+        // 左滑跑足迹线
+        ctx.beginPath();
+        ctx.ellipse(pt.x - 3, pt.y - 9, 1.8, 3.8, Math.PI / 6, 0, 2 * Math.PI);
+        ctx.stroke();
+        // 右滑跑足迹线
+        ctx.beginPath();
+        ctx.ellipse(pt.x + 3, pt.y - 9, 1.8, 3.8, -Math.PI / 6, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
 // 🚀 核心渲染引擎：2D 冰面圆弧物理轨迹图
 function drawSkatePath(pathData) {
     const canvas = document.getElementById("skate-canvas");
@@ -238,14 +279,28 @@ function drawSkatePath(pathData) {
         ctx.beginPath();
         ctx.arc(centerTrans.x, centerTrans.y, scaledR, p.startAngle, p.endAngle, p.anticlockwise);
         
-        // 根据步骤数产生炫目的渐变光痕效果
         const progressRatio = i / points.length;
-        ctx.strokeStyle = `rgba(56, 189, 248, ${0.45 + progressRatio * 0.55})`;
+        const startStateStr = points[i-1].state;
+        const isLeft = startStateStr[0] === 'L';
+        const isForward = startStateStr[1] === 'F';
+
+        // 左右脚区分：左脚蓝色，右脚橙色
+        const baseColor = isLeft ? "56, 189, 248" : "249, 115, 22";
+        ctx.strokeStyle = `rgba(${baseColor}, ${0.5 + progressRatio * 0.5})`;
+        ctx.shadowColor = `rgba(${baseColor}, 0.65)`;
         ctx.lineWidth = 3.5;
         ctx.shadowBlur = 12;
-        ctx.shadowColor = "rgba(56, 189, 248, 0.65)";
+
+        // 前后向区分：前滑实线，后滑虚线 (ISU标准)
+        if (isForward) {
+            ctx.setLineDash([]);
+        } else {
+            ctx.setLineDash([6, 4]);
+        }
+
         ctx.stroke();
         ctx.shadowBlur = 0; // 重置发光防止污染文字
+        ctx.setLineDash([]); // 立即恢复实线
 
         // 绘制动作简写于弧线黄金中点 (Mid-angle)
         if (p.move) {
@@ -259,7 +314,7 @@ function drawSkatePath(pathData) {
             const miniName = p.move.name.split(" ")[0].substring(0, 4);
             ctx.fillText(miniName, mx, my - 5);
 
-            // 绘制滑跑方向切线箭头
+            // 绘制滑跑方向切线箭头（同步双脚颜色）
             const worldMx = p.cx + p.R * Math.cos(midAngle);
             const worldMy = p.cy + p.R * Math.sin(midAngle);
             const pMid = transform(worldMx, worldMy);
@@ -282,7 +337,7 @@ function drawSkatePath(pathData) {
             ctx.lineTo(leftX, leftY);
             ctx.lineTo(rightX, rightY);
             ctx.closePath();
-            ctx.fillStyle = "rgba(56, 189, 248, 0.85)";
+            ctx.fillStyle = isLeft ? "rgba(56, 189, 248, 0.85)" : "rgba(249, 115, 22, 0.85)";
             ctx.fill();
         }
     }
@@ -292,13 +347,18 @@ function drawSkatePath(pathData) {
         const pt = transform(p.x, p.y);
         const isLast = (idx === points.length - 1);
 
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, isLast ? 6 : 4, 0, 2 * Math.PI);
-        ctx.fillStyle = isLast ? "#38bdf8" : "#0f172a";
-        ctx.strokeStyle = isLast ? "#ffffff" : "#0284c7";
-        ctx.lineWidth = isLast ? 2.5 : 2;
-        ctx.fill();
-        ctx.stroke();
+        // 如果是特殊转体/步法，在转体点绘制 ISU 标准符号
+        if (p.move && ["three_turn", "bracket", "mohawk"].includes(p.move.category)) {
+            drawISUSymbol(ctx, pt, p.move.category);
+        } else {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, isLast ? 6 : 4, 0, 2 * Math.PI);
+            ctx.fillStyle = isLast ? "#38bdf8" : "#0f172a";
+            ctx.strokeStyle = isLast ? "#ffffff" : "#0284c7";
+            ctx.lineWidth = isLast ? 2.5 : 2;
+            ctx.fill();
+            ctx.stroke();
+        }
 
         // 绘制高亮文字
         ctx.fillStyle = isLast ? "#ffffff" : "#94a3b8";
