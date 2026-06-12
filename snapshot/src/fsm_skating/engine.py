@@ -4,7 +4,10 @@ import random
 from typing import List, Dict, Tuple, Any, Optional
 from .core import State, get_relative_conditions, ALL_STATES
 
-def check_match(current_state: State, target_state: State, move_config: Dict[str, Any]) -> bool:
+
+def check_match(
+    current_state: State, target_state: State, move_config: Dict[str, Any]
+) -> bool:
     """
     双重规则匹配逻辑。
     1. 校验基础 conditions 转移差异是否匹配。
@@ -14,9 +17,11 @@ def check_match(current_state: State, target_state: State, move_config: Dict[str
     actual_conditions = get_relative_conditions(current_state, target_state)
 
     # 门禁一：基础关系比对
-    if (conditions.get("same_foot") != actual_conditions["same_foot"] or
-        conditions.get("same_dir") != actual_conditions["same_dir"] or
-        conditions.get("same_edge") != actual_conditions["same_edge"]):
+    if (
+        conditions.get("same_foot") != actual_conditions["same_foot"]
+        or conditions.get("same_dir") != actual_conditions["same_dir"]
+        or conditions.get("same_edge") != actual_conditions["same_edge"]
+    ):
         return False
 
     # 门禁二：起始约束验证
@@ -34,18 +39,23 @@ class ChoreographyEngine:
     """
     花样滑冰状态机编排与过滤引擎。
     """
+
     def __init__(self, config_path: str):
         self.config_path = config_path
         self.moves = self._load_config()
 
     def _load_config(self) -> List[Dict[str, Any]]:
         if not os.path.exists(self.config_path):
-            raise FileNotFoundError(f"Configuration file not found at: {self.config_path}")
+            raise FileNotFoundError(
+                f"Configuration file not found at: {self.config_path}"
+            )
         with open(self.config_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         return data.get("moves", [])
 
-    def get_possible_transitions(self, current_state: State, max_difficulty: int = 999) -> List[Dict[str, Any]]:
+    def get_possible_transitions(
+        self, current_state: State, max_difficulty: int = 999
+    ) -> List[Dict[str, Any]]:
         """
         管道式过滤核心逻辑：
         1. 基础关系比对
@@ -71,9 +81,11 @@ class ChoreographyEngine:
                         abs_rot = None
                         if turn_rot == "natural":
                             from .core import get_natural_curvature
+
                             abs_rot = get_natural_curvature(current_state)
                         elif turn_rot == "opposite":
                             from .core import get_natural_curvature
+
                             start_curv = get_natural_curvature(current_state)
                             abs_rot = "CW" if start_curv == "CCW" else "CCW"
 
@@ -81,13 +93,14 @@ class ChoreographyEngine:
                         move_with_rot = dict(move)
                         move_with_rot["rotation_dir"] = abs_rot
 
-                        results.append({
-                            "target_state": target_state,
-                            "move": move_with_rot
-                        })
+                        results.append(
+                            {"target_state": target_state, "move": move_with_rot}
+                        )
 
         # 排序引擎：根据 (Difficulty, Name) 双键组合进行稳定升序排序
-        results.sort(key=lambda x: (x["move"].get("difficulty", 0), x["move"].get("name", "")))
+        results.sort(
+            key=lambda x: (x["move"].get("difficulty", 0), x["move"].get("name", ""))
+        )
         return results
 
     def verify_sequence(self, sequence_str: str) -> Dict[str, Any]:
@@ -103,13 +116,13 @@ class ChoreographyEngine:
             except ValueError as e:
                 return {
                     "valid": False,
-                    "error": f"状态字符 '{part}' 格式有误: {str(e)}"
+                    "error": f"状态字符 '{part}' 格式有误: {str(e)}",
                 }
 
         if len(states) < 2:
             return {
                 "valid": False,
-                "error": "状态序列中至少需要包含 2 个有效状态才能进行转移校验。"
+                "error": "状态序列中至少需要包含 2 个有效状态才能进行转移校验。",
             }
 
         transitions_details = []
@@ -117,12 +130,12 @@ class ChoreographyEngine:
 
         for i in range(len(states) - 1):
             s_from = states[i]
-            s_to = states[i+1]
+            s_to = states[i + 1]
 
             if s_from == s_to:
                 return {
                     "valid": False,
-                    "error": f"第 {i+1} 步转移出现原地停滞 ({s_from} -> {s_to})，这不符合动力学步法转移规则。"
+                    "error": f"第 {i + 1} 步转移出现原地停滞 ({s_from} -> {s_to})，这不符合动力学步法转移规则。",
                 }
 
             # 检索所有匹配当前转移的动作
@@ -134,9 +147,11 @@ class ChoreographyEngine:
                     abs_rot = None
                     if turn_rot == "natural":
                         from .core import get_natural_curvature
+
                         abs_rot = get_natural_curvature(s_from)
                     elif turn_rot == "opposite":
                         from .core import get_natural_curvature
+
                         start_curv = get_natural_curvature(s_from)
                         abs_rot = "CW" if start_curv == "CCW" else "CCW"
 
@@ -147,34 +162,42 @@ class ChoreographyEngine:
             if not matched_moves:
                 return {
                     "valid": False,
-                    "error": f"无法识别的物理转移: 从状态 {s_from} 无法直接通过任何已知动作转移到 {s_to}。"
+                    "error": f"无法识别的物理转移: 从状态 {s_from} 无法直接通过任何已知动作转移到 {s_to}。",
                 }
 
             # 升序排序匹配的动作列表
-            matched_moves.sort(key=lambda m: (m.get("difficulty", 0), m.get("name", "")))
+            matched_moves.sort(
+                key=lambda m: (m.get("difficulty", 0), m.get("name", ""))
+            )
 
-            transitions_details.append({
-                "from_state": s_from,
-                "to_state": s_to,
-                "candidate_moves": matched_moves,
-                "selected_move": matched_moves[0]  # 默认推选难度最低且字典序最小的最简动作
-            })
+            transitions_details.append(
+                {
+                    "from_state": s_from,
+                    "to_state": s_to,
+                    "candidate_moves": matched_moves,
+                    "selected_move": matched_moves[
+                        0
+                    ],  # 默认推选难度最低且字典序最小的最简动作
+                }
+            )
             total_difficulty += matched_moves[0].get("difficulty", 0)
 
         return {
             "valid": True,
             "states": states,
             "transitions": transitions_details,
-            "total_difficulty": total_difficulty
+            "total_difficulty": total_difficulty,
         }
 
-    def generate_sequence(self, steps: int, max_difficulty: int, start_state: Optional[State] = None) -> Optional[List[Tuple[State, Optional[Dict[str, Any]]]]]:
+    def generate_sequence(
+        self, steps: int, max_difficulty: int, start_state: Optional[State] = None
+    ) -> Optional[List[Tuple[State, Optional[Dict[str, Any]]]]]:
         """
         智能随机生成模块：
         生成一段包含指定步数（即 steps 次动作转移，共 steps + 1 个状态）的合规路径。
         使用带有回溯 (DFS) 的算法，避免随机游走陷入局部死胡同。
-        
-        返回列表结构：[(S0, M1), (S1, M2), ..., (Sn, None)] 
+
+        返回列表结构：[(S0, M1), (S1, M2), ..., (Sn, None)]
         其中 S_i 为当前状态，M_i+1 为转移到下一个状态所采用的动作，末尾元素无后续动作为 None。
         """
         if steps <= 0:
@@ -183,7 +206,9 @@ class ChoreographyEngine:
         # 若未提供起始状态，随机从 8 个基础状态中挑选一个
         init_state = start_state if start_state else random.choice(ALL_STATES)
 
-        def dfs(curr_state: State, remaining_steps: int) -> Optional[List[Tuple[State, Dict[str, Any]]]]:
+        def dfs(
+            curr_state: State, remaining_steps: int
+        ) -> Optional[List[Tuple[State, Dict[str, Any]]]]:
             if remaining_steps == 0:
                 return []
 
@@ -228,15 +253,18 @@ class ChoreographyEngine:
         """
         with open(self.config_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-        
-        categories = data.get("categories", {
-            "three_turn": "转三步 (Three-Turn)",
-            "bracket": "括弧步 (Bracket)",
-            "rocker": "摇滚步 (Rocker)",
-            "counter": "计数步 (Counter)",
-            "mohawk": "莫霍克步 (Mohawk)",
-            "choctaw": "乔克陶步 (Choctaw)"
-        })
+
+        categories = data.get(
+            "categories",
+            {
+                "three_turn": "转三步 (Three-Turn)",
+                "bracket": "括弧步 (Bracket)",
+                "rocker": "摇滚步 (Rocker)",
+                "counter": "计数步 (Counter)",
+                "mohawk": "莫霍克步 (Mohawk)",
+                "choctaw": "乔克陶步 (Choctaw)",
+            },
+        )
 
         required = ["FO", "FI", "BO", "BI"]
         report = {}
@@ -246,7 +274,7 @@ class ChoreographyEngine:
                 "name": cat_name,
                 "implemented": [],
                 "missing": list(required),
-                "generic_count": 0
+                "generic_count": 0,
             }
 
         # 遍历动作，依据约束反推其对应的特定边缘方向变体
@@ -254,7 +282,7 @@ class ChoreographyEngine:
             cat_id = move.get("category")
             if not cat_id or cat_id not in report:
                 continue
-            
+
             constraints = move.get("start_constraints")
             if constraints and "dir" in constraints and "edge" in constraints:
                 variant = f"{constraints['dir']}{constraints['edge']}"

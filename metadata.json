@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] feat: 达成步法库 100% 覆盖并修复诊断器缺陷", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781227391.9399974, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "Capture: M cli.py, M core.py, M engine.py ... and 2 more files", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781228304.2948956, "duration_ms": 0}}
