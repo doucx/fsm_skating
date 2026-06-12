@@ -1,43 +1,3 @@
-我们现在将创建一个专门的测试文件 `tests/test_phase1_refactor.py`。这个测试集将直接验证我们在第一阶段引入的两个核心能力：**物理状态演算的准确性**以及**序列校验中的歧义性（多重路径）自动识别**。
-
-## [WIP] test: 为状态推导与 DAG 歧义性识别逻辑编写单元测试
-
-### 用户需求
-需要确保新引入的状态推导辅助函数 `calculate_next_state` 在各种物理条件下都能得出准确的用刃状态，并验证引擎能否正确识别出诸如 `LFI -> LBO` 这种包含多重路径的序列。
-
-### 评论
-高质量的单元测试是物理引擎重构的基石。通过对物理翻转逻辑的穷举测试，我们可以确保后续“动作驱动”模式推导出的轨迹与选手的真实体感完全一致。
-
-### 目标
-1. 验证 `get_opposite_*` 系列辅助函数能够正确翻转属性。
-2. 验证 `calculate_next_state` 在不同 `conditions` 组合下（如同脚变向变刃、异脚变向同刃等）的演算结果。
-3. 验证 `engine.verify_sequence` 在处理唯一路径（如变刃步）和歧义路径（如转三/括弧）时，能准确设置 `is_ambiguous` 标志。
-
-### 基本原理
-我们将使用 `pytest` 框架。针对推导逻辑，我们将测试特定的物理变换（如三转）；针对歧义性，我们将利用现有的 `moves_config.yaml` 配置文件，因为其中已经定义了 `LFI -> LBO` 对应的两种不同动作为候选。
-
-### 标签
-#intent/tooling #flow/ready #priority/medium
-#comp/tests #concept/state #concept/history
-#ai/instruct
-#task/domain/testing
-#task/object/state-derivation-tests
-#task/action/implementation
-#task/state/continue #task/status/active
-
----
-
-### Script
-
-#### Acts 1: 创建物理演算与歧义识别测试文件
-
-我们将新建 `tests/test_phase1_refactor.py`，其中包含对领域模型新方法和引擎新属性的详尽测试。
-
-~~~~~act
-write_file
-tests/test_phase1_refactor.py
-~~~~~
-~~~~~python
 import pytest
 from fsm_skating.domain.models import (
     State,
@@ -108,9 +68,3 @@ def test_verification_ambiguity_flag(engine):
     res_long = engine.verify_sequence("LFO -> LFI -> LBO")
     assert res_long.valid is True
     assert res_long.is_ambiguous is True  # 只要其中有一段有分叉，整个序列就是有歧义的
-~~~~~
-
-### 下一步建议
-1. **执行测试**：在终端运行 `pytest tests/test_phase1_refactor.py`。
-2. **确认结果**：如果测试通过，说明我们已经成功地在底层识别出了“多重边（DAG）”的存在。
-3. **开始第二阶段**：我们可以放心地开始开发 `verify_move_sequence` 方法，它将利用 `calculate_next_state` 来实现真正的步法驱动校验。如果你准备好了，我们可以继续。
