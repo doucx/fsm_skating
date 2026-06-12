@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "Capture: M engine.py", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781245669.0834649, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor(web): 重构渲染流程并移除时间轴不必要的 DOM 优化拦截", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781246210.725005, "duration_ms": 0}}

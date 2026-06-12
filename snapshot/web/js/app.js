@@ -44,7 +44,7 @@ function initChoreography() {
     ui.updateCurrStateUI(startState);
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
-    drawPath(); // 保证起始滑跑状态建立时，第一段滑行弧线就被立即绘制出来
+    drawPath(true); // 保证起始滑跑状态建立时，第一段滑行弧线就被立即绘制出来，并强制初始化 DOM 时间轴
     updateTrajectorySourceUI();
 }
 
@@ -79,7 +79,7 @@ function chooseNextMove(nextStateObj, moveObj) {
     ui.updateCurrStateUI(nextStateStr);
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
-    drawPath();
+    drawPath(true);
     updateTrajectorySourceUI();
 }
 
@@ -91,7 +91,7 @@ function undoMove() {
     ui.updateCurrStateUI(prevState);
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
-    drawPath();
+    drawPath(true);
     updateTrajectorySourceUI();
 }
 
@@ -258,7 +258,7 @@ function loadVerifiedPathToCanvas() {
     ui.updateCurrStateUI(path[path.length - 1].state);
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
-    drawPath();
+    drawPath(true);
     updateTrajectorySourceUI();
 }
 
@@ -282,19 +282,20 @@ async function generateSequence() {
         ui.updateCurrStateUI(lastState);
         fetchNextTransitions();
         ui.updateStats(path, undoMove);
-        drawPath();
+        drawPath(true);
         updateTrajectorySourceUI();
     } catch (err) {
         alert(`[-] 生成失败: ${err.message}`);
     }
 }
 
-function drawPath() {
+function drawPath(updateTimeline = false) {
     const geometry = computeGeometry(path);
     renderer.draw(geometry);
     
-    // 渲染底层物理时间轴
-    updateLinearTimelineUI(geometry);
+    if (updateTimeline) {
+        updateLinearTimelineUI(geometry);
+    }
     
     if (isAnimating || animProgress > 0 || isDraggingProgress) {
         renderAnimationStep(geometry);
@@ -311,11 +312,6 @@ function updateLinearTimelineUI(geometry) {
         container.innerHTML = "";
         return;
     }
-
-    // 只有当路径步数发生变化时才重新渲染背景片段，优化性能
-    const currentStepCount = arcs.length;
-    if (container.dataset.lastCount == currentStepCount) return;
-    container.dataset.lastCount = currentStepCount;
 
     container.innerHTML = "";
     const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
@@ -678,7 +674,7 @@ async function importTrajectorySource() {
             ui.updateCurrStateUI(startState);
             fetchNextTransitions();
             ui.updateStats(path, undoMove);
-            drawPath();
+            drawPath(true);
             updateTrajectorySourceUI();
             return;
         }
@@ -718,7 +714,7 @@ async function importTrajectorySource() {
         ui.updateCurrStateUI(path[path.length - 1].state);
         fetchNextTransitions();
         ui.updateStats(path, undoMove);
-        drawPath();
+        drawPath(true);
         updateTrajectorySourceUI();
 
     } catch (err) {
