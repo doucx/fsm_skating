@@ -142,10 +142,33 @@
                 <!-- 序列验证模块 -->
                 <div class="ice-card rounded-2xl p-6">
                     <h2 class="text-lg font-semibold flex items-center text-emerald-400 mb-3"><i class="fa-solid fa-spell-check mr-2"></i> 2. 物理步法序列校验器</h2>
-                    <p class="text-xs text-slate-400 mb-3">支持对任意输入的边缘状态转移序列进行分析翻译。</p>
+                    
+                    <!-- 模式切换 -->
+                    <div class="flex space-x-2 mb-4">
+                        <button id="btn-verify-mode-state" onclick="switchVerifyMode('state')" class="flex-1 py-1.5 text-xs font-semibold rounded bg-emerald-600 text-white border border-emerald-500 transition">状态流校验</button>
+                        <button id="btn-verify-mode-move" onclick="switchVerifyMode('move')" class="flex-1 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 border border-slate-700/60 hover:bg-slate-700/60 transition">步法流校验</button>
+                    </div>
+
+                    <!-- 可选的起始用刃状态（仅步法流可用） -->
+                    <div id="verify-start-state-container" class="hidden mb-3">
+                        <label class="block text-[10px] text-slate-400 mb-1">起始用刃状态 (可选，默认自动推导)</label>
+                        <select id="verify-start-state-select" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-emerald-500">
+                            <option value="">自动推导</option>
+                            <option value="LFO">LFO - 左前外刃</option>
+                            <option value="LFI">LFI - 左前内刃</option>
+                            <option value="LBO">LBO - 左后外刃</option>
+                            <option value="LBI">LBI - 左后内刃</option>
+                            <option value="RFO">RFO - 右前外刃</option>
+                            <option value="RFI">RFI - 右前内刃</option>
+                            <option value="RBO">RBO - 右后外刃</option>
+                            <option value="RBI">RBI - 右后内刃</option>
+                        </select>
+                    </div>
+
+                    <p id="verify-desc" class="text-xs text-slate-400 mb-3">支持对任意输入的边缘状态转移序列进行分析翻译。</p>
                     <div class="space-y-3">
                         <input id="verify-input" type="text" placeholder="例: LFO -> LFI -> RFI -> RBO" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500 text-slate-200">
-                        <button onclick="verifySequence()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-sm transition shadow-lg shadow-emerald-950/20"><i class="fa-solid fa-magnifying-glass mr-1"></i> 进行验证解析</button>
+                        <button onclick="handleVerify()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-sm transition shadow-lg shadow-emerald-950/20"><i class="fa-solid fa-magnifying-glass mr-1"></i> 进行验证解析</button>
                     </div>
                     <div id="verify-result" class="mt-4 hidden">
                         <!-- 验证结果展示 -->

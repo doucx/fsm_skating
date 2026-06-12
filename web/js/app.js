@@ -17,6 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.fetchNextTransitions = fetchNextTransitions;
     window.undoMove = undoMove;
     window.verifySequence = verifySequence;
+    window.verifyMovesSequence = verifyMovesSequence;
+    window.handleVerify = handleVerify;
+    window.switchVerifyMode = switchVerifyMode;
+    window.loadVerifiedPathToCanvas = loadVerifiedPathToCanvas;
     window.generateSequence = generateSequence;
     window.toggleFullscreen = toggleFullscreen;
     window.chooseNextMove = chooseNextMove;
@@ -76,6 +80,42 @@ function undoMove() {
     drawPath();
 }
 
+let verifyMode = 'state';
+
+function switchVerifyMode(mode) {
+    verifyMode = mode;
+    const btnState = document.getElementById("btn-verify-mode-state");
+    const btnMove = document.getElementById("btn-verify-mode-move");
+    const startStateContainer = document.getElementById("verify-start-state-container");
+    const input = document.getElementById("verify-input");
+    const desc = document.getElementById("verify-desc");
+    const output = document.getElementById("verify-result");
+
+    output.classList.add("hidden");
+
+    if (mode === 'state') {
+        btnState.className = "flex-1 py-1.5 text-xs font-semibold rounded bg-emerald-600 text-white border border-emerald-500 transition";
+        btnMove.className = "flex-1 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 border border-slate-700/60 hover:bg-slate-700/60 transition";
+        startStateContainer.classList.add("hidden");
+        input.placeholder = "例: LFO -> LFI -> RFI -> RBO";
+        desc.innerText = "支持对任意输入的边缘状态转移序列进行分析翻译。";
+    } else {
+        btnState.className = "flex-1 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 border border-slate-700/60 hover:bg-slate-700/60 transition";
+        btnMove.className = "flex-1 py-1.5 text-xs font-semibold rounded bg-emerald-600 text-white border border-emerald-500 transition";
+        startStateContainer.classList.remove("hidden");
+        input.placeholder = "例: stroke -> forward_inside_three_turn";
+        desc.innerText = "输入一组纯步法动作 ID（逗号或空格、英文箭头隔开），自动推导演化轨迹。";
+    }
+}
+
+async function handleVerify() {
+    if (verifyMode === 'state') {
+        await verifySequence();
+    } else {
+        await verifyMovesSequence();
+    }
+}
+
 async function verifySequence() {
     const sequence = document.getElementById("verify-input").value;
     const output = document.getElementById("verify-result");
@@ -95,23 +135,115 @@ async function verifySequence() {
             let listHTML = "";
             data.transitions.forEach((t) => {
                 const rot = t.selected_move.rotation_dir ? ` [${t.selected_move.rotation_dir === 'CW' ? '顺时针' : '逆时针'}]` : "";
+                let candidateHTML = "";
+                if (t.candidate_moves.length > 1) {
+                    const others = t.candidate_moves.slice(1).map(c => c.name).join(", ");
+                    candidateHTML = `<div class="text-[10px] text-amber-400/80 mt-1"><i class="fa-solid fa-circle-nodes mr-1"></i>存在歧义（多重路径候选: ${others}）</div>`;
+                }
                 listHTML += `
                     <div class="text-xs pl-3 border-l border-emerald-800">
                         <span class="font-bold text-slate-200">${t.from_state} ──▶ ${t.to_state}</span><br/>
                         <span class="text-emerald-400">${t.selected_move.name}${rot}</span> (难度: ${t.selected_move.difficulty})
+                        ${candidateHTML}
                     </div>
                 `;
             });
+
+            // 允许一键渲染 verifiedPath
+            window.verifiedPathData = data.transitions.map(t => ({
+                state: `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
+                move: t.selected_move
+            }));
+            window.verifiedInitialState = `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
+
+            const loadBtnHTML = `
+                <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line mr-1"></i> 将此验证轨迹载入主画布预览
+                </button>
+            `;
 
             output.innerHTML = `
                 <p class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-circle-check mr-1"></i> 验证通过！完全符合动力学规范！</p>
                 <p class="text-xs text-slate-400">总设计难度积分: <strong class="text-slate-200 text-sm">${data.total_difficulty}</strong></p>
                 <div class="space-y-2 mt-2">${listHTML}</div>
+                ${loadBtnHTML}
             `;
         }
     } catch (err) {
         output.innerHTML = `<p class="text-xs text-rose-400">通信网络故障: ${err.message}</p>`;
     }
+}
+
+async function verifyMovesSequence() {
+    const rawInput = document.getElementById("verify-input").value;
+    const startState = document.getElementById("verify-start-state-select").value;
+    const output = document.getElementById("verify-result");
+    if (!rawInput.trim()) return;
+
+    // 兼容空格、箭头、逗号分割
+    const moveIds = rawInput.split(/->|,|\s+/).map(m => m.trim().toLowerCase()).filter(m => m.length > 0);
+    if (moveIds.length === 0) return;
+
+    output.classList.remove("hidden");
+    output.className = "mt-4 p-4 rounded-xl text-sm border bg-slate-900/80";
+    output.innerHTML = '<p class="text-slate-400 animate-pulse">正在进行步法动力学轨迹演化与起滑约束验证...</p>';
+
+    try {
+        const data = await api.verifyMovesSequence(moveIds, startState);
+        if (!data.valid) {
+            output.className = "mt-4 p-4 rounded-xl text-sm border border-rose-950 bg-rose-950/20";
+            output.innerHTML = `<p class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i> 校验失败</p><p class="text-xs text-slate-300 mt-2">${data.error}</p>`;
+        } else {
+            output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-3";
+            let listHTML = "";
+            data.trace.forEach((step) => {
+                const rot = step.move.rotation_dir ? ` [${step.move.rotation_dir === 'CW' ? '顺时针' : '逆时针'}]` : "";
+                listHTML += `
+                    <div class="text-xs pl-3 border-l border-emerald-800">
+                        <span class="font-bold text-slate-200">${step.from_state} ──▶ ${step.to_state}</span><br/>
+                        <span class="text-emerald-400">${step.move.name}${rot}</span> (难度: ${step.move.difficulty})
+                    </div>
+                `;
+            });
+
+            // 渲染推导出的轨迹至主画布
+            window.verifiedPathData = data.trace.map(t => ({
+                state: `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
+                move: t.move
+            }));
+            const initial = `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
+            window.verifiedInitialState = initial;
+
+            const loadBtnHTML = `
+                <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line mr-1"></i> 将此演算轨迹载入主画布预览
+                </button>
+            `;
+
+            output.innerHTML = `
+                <p class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-circle-check mr-1"></i> 验证并演算成功！</p>
+                <p class="text-xs text-slate-400">推导总设计难度分: <strong class="text-slate-200 text-sm">${data.total_difficulty}</strong></p>
+                <div class="space-y-2 mt-2">${listHTML}</div>
+                ${loadBtnHTML}
+            `;
+        }
+    } catch (err) {
+        output.className = "mt-4 p-4 rounded-xl text-sm border border-rose-950 bg-rose-950/20";
+        output.innerHTML = `<p class="text-xs text-rose-400">校验失败: ${err.message}</p>`;
+    }
+}
+
+function loadVerifiedPathToCanvas() {
+    if (!window.verifiedPathData || !window.verifiedInitialState) return;
+    path = [{ state: window.verifiedInitialState, move: null }];
+    window.verifiedPathData.forEach(step => {
+        path[path.length - 1].move = step.move;
+        path.push({ state: step.state, move: null });
+    });
+    ui.updateCurrStateUI(path[path.length - 1].state);
+    fetchNextTransitions();
+    ui.updateStats(path, undoMove);
+    drawPath();
 }
 
 async function generateSequence() {

@@ -32,3 +32,19 @@ export async function generateSequence(steps, maxDifficulty, startState) {
     }
     return await res.json();
 }
+
+export async function verifyMovesSequence(moveIds, startState) {
+    const res = await fetch(`${API_BASE}/verify/moves`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            move_ids: moveIds,
+            start_state: startState || null
+        })
+    });
+    if (!res.ok) {
+        const detail = await res.json();
+        throw new Error(detail.detail || "步法流序列校验失败");
+    }
+    return await res.json();
+}
