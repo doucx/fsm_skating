@@ -366,8 +366,8 @@ def main():
     parser = argparse.ArgumentParser(description="花样滑冰步法智能编排状态机系统 CLI")
     parser.add_argument(
         "--config",
-        default="moves_config.yaml",
-        help="配置文件 (moves_config.yaml) 路径，默认使用当前目录文件",
+        default="config/moves_config.yaml",
+        help="配置文件 (config/moves_config.yaml) 路径，默认使用当前目录文件",
     )
     args = parser.parse_args()
 
@@ -375,7 +375,7 @@ def main():
         engine = ChoreographyEngine(args.config)
     except FileNotFoundError:
         parent_config = os.path.join(
-            os.path.dirname(__file__), "../../moves_config.yaml"
+            os.path.dirname(__file__), "../../../config/moves_config.yaml"
         )
         if os.path.exists(parent_config):
             engine = ChoreographyEngine(parent_config)

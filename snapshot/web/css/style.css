@@ -1,0 +1,12 @@
+body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f1f5f9;
+}
+.ice-card {
+    background: rgba(30, 41, 59, 0.45);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.glow-ice {
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+}

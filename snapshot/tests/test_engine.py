@@ -7,7 +7,7 @@ from fsm_skating.domain.models import State
 
 @pytest.fixture
 def engine():
-    return ChoreographyEngine("moves_config.yaml")
+    return ChoreographyEngine("config/moves_config.yaml")
 
 
 def test_load_config(engine):

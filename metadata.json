@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] fix(cli): 修正 entry point 声明以解决 CLI 无法调用的问题", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230143.7655993, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 重构项目目录结构与前端代码，实现配置与表现分离", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230336.0369942, "duration_ms": 0}}

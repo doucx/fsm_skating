@@ -28,9 +28,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-config_path = os.path.join(os.path.dirname(__file__), "../../../moves_config.yaml")
+config_path = os.path.join(os.path.dirname(__file__), "../../../config/moves_config.yaml")
 if not os.path.exists(config_path):
-    config_path = "moves_config.yaml"
+    config_path = "config/moves_config.yaml"
 
 try:
     engine = ChoreographyEngine(config_path)
