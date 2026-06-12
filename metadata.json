@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "Capture: M main.py, M test_cli.py", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230456.1883237, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(web): 在轨迹流向图中显示具体的步法名称", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230789.427082, "duration_ms": 0}}

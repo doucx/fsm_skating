@@ -332,8 +332,14 @@ function updateStats() {
 
         if (step.move) {
             const arrow = document.createElement("span");
-            arrow.className = "text-[10px] text-slate-500 flex flex-col items-center";
-            arrow.innerHTML = `<i class="fa-solid fa-chevron-right"></i><span class="text-[9px] text-slate-400 scale-90">${step.move.difficulty}级</span>`;
+            arrow.className = "text-[10px] text-slate-500 flex flex-col items-center px-1";
+            // 显示步法名称（截取前段）和难度
+            const miniName = step.move.name.split(" ")[0];
+            arrow.innerHTML = `
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="text-[8px] text-slate-400 scale-90 text-center leading-tight">
+                    ${miniName}<br/>${step.move.difficulty}级
+                </span>`;
             trail.appendChild(arrow);
         }
     });
