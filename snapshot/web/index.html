@@ -99,6 +99,26 @@
                         </div>
                     </div>
 
+                    <!-- 📦 轨迹流源代码（支持导入/导出） -->
+                    <div class="mb-6">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex justify-between items-center">
+                            <span>📦 轨迹流源代码（支持导入/导出）</span>
+                        </h3>
+                        <div class="flex space-x-2">
+                            <textarea id="trajectory-source" rows="3" class="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs font-mono text-emerald-400 outline-none focus:border-sky-500" placeholder='[{"state": "LFO", "move_id": null}]'></textarea>
+                            <div class="flex flex-col space-y-2 justify-center">
+                                <button id="btn-copy-source" onclick="copyTrajectorySource()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-300 transition flex items-center justify-center space-x-1 min-w-[80px]">
+                                    <i class="fa-solid fa-copy"></i>
+                                    <span>复制</span>
+                                </button>
+                                <button onclick="importTrajectorySource()" class="px-3 py-2 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-lg text-xs text-sky-300 transition flex items-center justify-center space-x-1 min-w-[80px]">
+                                    <i class="fa-solid fa-file-import"></i>
+                                    <span>导入</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 候选分支选择 -->
                     <div>
                         <h3 class="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-3">⬇️ FSM 动力学引擎推荐分支 (已排序)</h3>
