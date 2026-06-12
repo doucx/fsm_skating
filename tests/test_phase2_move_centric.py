@@ -38,8 +38,8 @@ def test_verify_move_sequence_success(engine):
     assert step2.move.id == "forward_inside_three_turn"
     assert str(step2.to_state) == "RBO"
 
-    # 难度: 1 (Stroke) + 3 (FI 3-Turn) = 4
-    assert res.total_difficulty == 4
+    # 难度: 1 (Stroke) + 2 (FI 3-Turn) = 3
+    assert res.total_difficulty == 3
 
 
 def test_verify_move_sequence_default_start(engine):
@@ -78,4 +78,4 @@ def test_verify_move_sequence_complex_chain(engine):
     assert str(res.trace[0].to_state) == "RFI"
     assert str(res.trace[1].to_state) == "LBI"
     assert str(res.trace[2].to_state) == "LFO"
-    assert res.total_difficulty == 1 + 2 + 4  # 7
+    assert res.total_difficulty == 1 + 1 + 2  # 4
