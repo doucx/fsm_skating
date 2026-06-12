@@ -445,11 +445,29 @@ function renderAnimationStep(geometry) {
     const fFactor = document.fullscreenElement ? renderer.zoomFactor : 1.0;
     
     // 执行绘制并获取当前位置的状态信息
-    const currentInfo = renderer.drawTracker(geometry, animProgress, transform, fFactor);
+    const info = renderer.drawTracker(geometry, animProgress, transform, fFactor);
     
-    if (currentInfo) {
-        document.getElementById("overlay-move").innerText = currentInfo.moveName;
-        document.getElementById("overlay-state").innerText = currentInfo.state;
+    if (info) {
+        // 更新当前主看板
+        document.getElementById("overlay-state").innerText = info.current.state;
+        document.getElementById("overlay-move").innerText = info.current.moveName;
+
+        // 更新上一个状态
+        const prevS = document.getElementById("overlay-prev-state");
+        const prevM = document.getElementById("overlay-prev-move");
+        if (info.prev) {
+            prevS.innerText = info.prev.state;
+            prevM.innerText = info.prev.moveName;
+        } else {
+            prevS.innerText = "无";
+            prevM.innerText = "起始位置";
+        }
+
+        // 更新预告动作
+        // 注意：逻辑上，“当前滑行弧线”之后的动作就是该弧线末端的 Move
+        const nextM = document.getElementById("overlay-next-move");
+        nextM.innerText = info.nextMove || "结束";
+
         document.getElementById("anim-progress-bar").style.width = `${animProgress * 100}%`;
     }
 }

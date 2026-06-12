@@ -210,10 +210,13 @@ export class CanvasRenderer {
         let targetArc = arcs[arcs.length - 1];
         let localProgress = 1.0;
 
-        for (const arc of arcs) {
+        let targetIdx = arcs.length - 1;
+        for (let i = 0; i < arcs.length; i++) {
+            const arc = arcs[i];
             const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
             if (currentLen + arcLen >= targetLen) {
                 targetArc = arc;
+                targetIdx = i;
                 localProgress = (targetLen - currentLen) / arcLen;
                 break;
             }
@@ -246,9 +249,20 @@ export class CanvasRenderer {
         ctx.fill();
         ctx.restore();
 
+        // 3.5 获取上下文信息
+        const prevArc = targetIdx > 0 ? arcs[targetIdx - 1] : null;
+        const nextArc = targetIdx < arcs.length - 1 ? arcs[targetIdx + 1] : null;
+
         return {
-            state: targetArc.state,
-            moveName: targetArc.move ? targetArc.move.name : "滑行/蹬冰"
+            current: {
+                state: targetArc.state,
+                moveName: targetArc.move ? targetArc.move.name : "滑行/蹬冰"
+            },
+            prev: prevArc ? {
+                state: prevArc.state,
+                moveName: prevArc.move ? prevArc.move.name : "起始"
+            } : null,
+            nextMove: targetArc.move ? targetArc.move.name : (nextArc && nextArc.move ? nextArc.move.name : "收尾/结束")
         };
     }
 
