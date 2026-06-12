@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] refactor: 重构项目目录结构与前端代码，实现配置与表现分离", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230336.0369942, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] chore: 重构项目目录结构并将前端资源分离，优化配置文件管理", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230435.086129, "duration_ms": 0}}
