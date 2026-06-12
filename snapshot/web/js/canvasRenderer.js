@@ -199,6 +199,59 @@ export class CanvasRenderer {
         ctx.fill();
     }
 
+    drawTracker(geometry, progress, transform, fFactor) {
+        const { arcs } = geometry;
+        if (!arcs || arcs.length === 0) return null;
+
+        // 1. 根据总弧长计算当前 progress 落在哪个 arc 上
+        const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+        let targetLen = totalLength * progress;
+        let currentLen = 0;
+        let targetArc = arcs[arcs.length - 1];
+        let localProgress = 1.0;
+
+        for (const arc of arcs) {
+            const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
+            if (currentLen + arcLen >= targetLen) {
+                targetArc = arc;
+                localProgress = (targetLen - currentLen) / arcLen;
+                break;
+            }
+            currentLen += arcLen;
+        }
+
+        // 2. 计算插值坐标
+        const currentAngle = targetArc.startAngle + (targetArc.endAngle - targetArc.startAngle) * localProgress;
+        const worldX = targetArc.cx + targetArc.R * Math.cos(currentAngle);
+        const worldY = targetArc.cy + targetArc.R * Math.sin(currentAngle);
+        const pos = transform(worldX, worldY);
+
+        // 3. 绘制追踪球 (冰晶小球)
+        const ctx = this.ctx;
+        const isLeft = targetArc.state[0] === 'L';
+        const ballColor = isLeft ? "56, 189, 248" : "249, 115, 22";
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 8 * fFactor, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${ballColor}, 0.9)`;
+        ctx.shadowBlur = 15 * fFactor;
+        ctx.shadowColor = `rgba(${ballColor}, 0.8)`;
+        ctx.fill();
+        
+        // 内核白光
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 3 * fFactor, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.restore();
+
+        return {
+            state: targetArc.state,
+            moveName: targetArc.move ? targetArc.move.name : "滑行/蹬冰"
+        };
+    }
+
     _drawISUSymbol(ctx, pt, category, fFactor = 1.0) {
         ctx.save();
         ctx.strokeStyle = "#ffffff";

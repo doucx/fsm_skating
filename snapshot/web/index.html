@@ -68,12 +68,33 @@
                     <!-- 🚀 新增：2D Canvas 冰面轨迹实时渲染区 -->
                     <div class="mb-6">
                         <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex justify-between items-center">
-                            <span>❄️ 实时冰面滑痕轨迹（2D 向量拼接）</span>
-                            <button onclick="toggleFullscreen()" class="text-[10px] text-sky-400 hover:text-sky-300 transition normal-case flex items-center">
-                                <i class="fa-solid fa-expand mr-1"></i> 点击全屏/放大
-                            </button>
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-person-skating mr-2 text-sky-400"></i>
+                                ❄️ 轨迹动态模拟
+                            </span>
+                            <div class="flex items-center space-x-4">
+                                <button onclick="toggleAnimation()" class="play-btn px-3 py-1 rounded-md border border-sky-500/50 bg-sky-500/10 text-sky-400 text-[10px] flex items-center">
+                                    <i id="play-icon" class="fa-solid fa-play mr-1.5"></i>
+                                    <span id="play-text">开始回放</span>
+                                </button>
+                                <button onclick="toggleFullscreen()" class="text-[10px] text-slate-400 hover:text-sky-300 transition normal-case flex items-center">
+                                    <i class="fa-solid fa-expand mr-1"></i> 全屏
+                                </button>
+                            </div>
                         </h3>
                         <div id="canvas-container" class="bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800 glow-ice relative group">
+                            <!-- 动态看板 -->
+                            <div id="playback-overlay" class="anim-overlay absolute top-4 left-4 z-10 hidden">
+                                <div class="bg-slate-900/80 backdrop-blur-md border border-sky-500/30 rounded-lg p-3 min-w-[140px]">
+                                    <div class="text-[10px] text-sky-400 uppercase tracking-widest font-bold mb-1">当前动态</div>
+                                    <div id="overlay-move" class="text-sm font-bold text-white truncate">--</div>
+                                    <div id="overlay-state" class="text-xl font-black text-sky-300 font-mono mt-1 tracking-tighter">LFO</div>
+                                </div>
+                            </div>
+                            <!-- 进度条 -->
+                            <div class="absolute bottom-0 left-0 w-full h-1 bg-slate-800/50 z-20">
+                                <div id="anim-progress-bar" class="h-full bg-sky-500 shadow-[0_0_8px_rgba(56,189,248,0.6)]" style="width: 0%"></div>
+                            </div>
                             <canvas id="skate-canvas" width="600" height="200" class="w-full h-[200px] block"></canvas>
                         </div>
                     </div>

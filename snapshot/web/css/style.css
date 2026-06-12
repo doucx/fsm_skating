@@ -24,3 +24,17 @@ body {
     width: 100vw !important;
     height: 100vh !important;
 }
+
+/* 动画控制叠加层 */
+.anim-overlay {
+    pointer-events: none;
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+.play-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.play-btn:hover {
+    transform: scale(1.05);
+    background-color: rgba(56, 189, 248, 0.2);
+}
