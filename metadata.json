@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] style: 增强 CLI 交互界面，实时显示滑行与动作旋转方向", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781226627.033955, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat: 引入动作库完整性检查器 (Action Library Linter)", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781227160.9664612, "duration_ms": 0}}

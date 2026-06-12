@@ -301,6 +301,52 @@ def run_generator(engine: ChoreographyEngine):
         export_path(path)
 
 
+def run_linter(engine: ChoreographyEngine):
+    """
+    4. 动作库完整性诊断模块
+    """
+    print("\n❄️  进入 [4. 动作库完整性诊断模块] ❄️")
+    print("正在扫描动作配置文件中各核心步法的边缘覆盖度 (FO, FI, BO, BI)...")
+    
+    report = engine.check_library_integrity()
+    
+    print("\n" + "📊" * 15)
+    print("        📊 动作库完整性诊断报告 📊")
+    print("📊" * 15)
+    
+    for cat_id, info in report.items():
+        name = info["name"]
+        impl = info["implemented"]
+        miss = info["missing"]
+        generic = info["generic_count"]
+        
+        total = len(impl)
+        percentage = (total / 4) * 100
+        
+        print(f"\n📁 类别: {name} (ID: {cat_id}")
+        print(f"  * 覆盖率: {percentage:.0f}% (已明确实现 {total}/4 个物理滑行变体)")
+        
+        if impl:
+            print(f"  * ✅ 已实现方向: {', '.join(impl)}")
+        if miss:
+            print(f"  * ❌ 缺失的方向: {', '.join(miss)}")
+        if generic > 0:
+            print(f"  * ⚠️ 包含 {generic} 个通用备用动作 (未设定起滑方向约束)")
+            
+        # 诊断建议
+        if percentage == 100:
+            print("  * 🌟 诊断: 优秀！该类步法具有100%全向覆盖，支持进行高精度的编排和细密难度微调。")
+        elif percentage > 0:
+            print("  * ⚠️ 诊断: 覆盖度不全。缺失的滑动方向将由通用动作托管，建议补齐具体方向以使难度评级更精准。")
+        else:
+            if generic > 0:
+                print("  * ℹ️ 诊断: 缺少方向细分。目前全部依靠通用动作，建议根据滑行轨迹细分为 FO/FI/BO/BI 变体。")
+            else:
+                print("  * 🔴 诊断: 极度匮乏！库中暂无此类别下的任何有效动作。")
+                
+    print("\n" + "📊" * 15 + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="花样滑冰步法智能编排状态机系统 CLI")
     parser.add_argument(
@@ -332,9 +378,10 @@ def main():
         print("  1. 交互式手动编排模块 (Interactive Choreographer)")
         print("  2. 序列解析与合法性验证模块 (Sequence Verifier)")
         print("  3. 智能随机生成模块 (Auto-Generator)")
-        print("  4. 退出系统 (Exit)")
+        print("  4. 动作库完整性诊断 (Action Library Linter)")
+        print("  5. 退出系统 (Exit)")
         print("=" * 50)
-        choice = input("请选择功能序号 [1-4]: ").strip()
+        choice = input("请选择功能序号 [1-5]: ").strip()
 
         if choice == "1":
             run_interactive(engine)
@@ -343,10 +390,12 @@ def main():
         elif choice == "3":
             run_generator(engine)
         elif choice == "4":
+            run_linter(engine)
+        elif choice == "5":
             print("\n感谢使用！滑冰愉快！❄️")
             break
         else:
-            print("[-] 无效序号，请在 [1-4] 之间进行选择。")
+            print("[-] 无效序号，请在 [1-5] 之间进行选择。")
 
 
 if __name__ == "__main__":

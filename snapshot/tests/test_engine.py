@@ -60,3 +60,18 @@ def test_generate_sequence(engine):
     for i in range(len(path) - 1):
         move = path[i][1]
         assert move["difficulty"] <= 3
+
+def test_library_integrity(engine):
+    report = engine.check_library_integrity()
+    assert "three_turn" in report
+    assert "mohawk" in report
+    
+    # three_turn 应该是 100% 覆盖 (FO, FI, BO, BI)
+    assert len(report["three_turn"]["implemented"]) == 4
+    assert len(report["three_turn"]["missing"]) == 0
+    
+    # mohawk 应该是部分覆盖 (只有 FO, FI)
+    assert "FO" in report["mohawk"]["implemented"]
+    assert "FI" in report["mohawk"]["implemented"]
+    assert "BO" in report["mohawk"]["missing"]
+    assert "BI" in report["mohawk"]["missing"]

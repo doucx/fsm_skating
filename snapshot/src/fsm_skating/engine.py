@@ -220,3 +220,51 @@ class ChoreographyEngine:
         result.append((curr, None))
 
         return result
+
+    def check_library_integrity(self) -> Dict[str, Any]:
+        """
+        检查动作库中各类别动作的覆盖度 (FO, FI, BO, BI)。
+        返回各类别已实现和缺失的变体。
+        """
+        with open(self.config_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        
+        categories = data.get("categories", {
+            "three_turn": "转三步 (Three-Turn)",
+            "bracket": "括弧步 (Bracket)",
+            "rocker": "摇滚步 (Rocker)",
+            "counter": "计数步 (Counter)",
+            "mohawk": "莫霍克步 (Mohawk)",
+            "choctaw": "乔克陶步 (Choctaw)"
+        })
+
+        required = ["FO", "FI", "BO", "BI"]
+        report = {}
+
+        for cat_id, cat_name in categories.items():
+            report[cat_id] = {
+                "name": cat_name,
+                "implemented": [],
+                "missing": list(required),
+                "generic_count": 0
+            }
+
+        # 遍历动作，依据约束反推其对应的特定边缘方向变体
+        for move in self.moves:
+            cat_id = move.get("category")
+            if not cat_id or cat_id not in report:
+                continue
+            
+            constraints = move.get("start_constraints")
+            if constraints and "dir" in constraints and "edge" in constraints:
+                variant = f"{constraints['dir']}{constraints['edge']}"
+                if variant in required:
+                    if variant not in report[cat_id]["implemented"]:
+                        report[cat_id]["implemented"].append(variant)
+                    if variant in report[cat_id]["missing"]:
+                        report[cat_id]["missing"].remove(variant)
+            else:
+                # 若无约束，判定为可通用捕获所有该方向转体动作的 Fallback 规则
+                report[cat_id]["generic_count"] += 1
+
+        return report
