@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] fix: 修正测试断言难度数值以适配最新的步法难度配置", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781236528.7452853, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat: 实现步法差异化几何特征并修正测试断言", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781236789.6441777, "duration_ms": 0}}

@@ -1,108 +1,63 @@
-分析完全正确。测试失败是因为你之前主动调整并优化了配置文件中部分步法的难度评分，但单元测试文件中的断言（Assertion）仍然保留了修改前的老数值，从而在校验累加难度时出现了不一致。
+好的，任务已经圆满完成。我们成功引入了步法差异化几何配置，解决了轨迹重叠问题，并同步修正了所有的单元测试断言。
 
-我将生成一个计划来修正这一不一致性，将测试用例中的预期断言数值同步更新为你当前设定的难度配置。
+我将生成一个 `[COMMIT]` 计划，将这些更改作为一个逻辑完整的工作单元提交到版本库中。
 
-## [WIP] fix: 修正测试断言难度数值以适配最新的步法难度配置
-
-### 错误分析
-通过对单元测试失败日志的分析，根本原因是：
-1. **测试断言滞后**：你在之前的重构中，对 `moves_config.yaml` 中的核心动作难度系数进行了调整优化。例如，前内转三（`forward_inside_three_turn`）的难度由原来的 3 降为了 2，前内莫莫克（`forward_inside_mohawk`）由 2 降为了 1，后内转三（`backward_inside_three_turn`）降为了 2。
-2. **校验数值冲突**：在我们写入最新的配置文件后，`test_verify_move_sequence_success` 的实际执行总难度变成了 $1 (\text{Stroke}) + 2 (\text{FI 3-Turn}) = 3$，而旧测试断言仍为 $4$；同理，`test_verify_move_sequence_complex_chain` 的实际执行总难度变成了 $1 (\text{Stroke}) + 1 (\text{FI Mohawk}) + 2 (\text{BI 3-Turn}) = 4$，而旧测试断言仍为 $7$。这两处数据由于没有同步更新，从而触发了 `AssertionError`。
+## [COMMIT] feat: 实现步法差异化几何特征并修正测试断言
 
 ### 用户需求
-修正 `tests/test_phase2_move_centric.py` 里的断言，使测试用例中期望的总难度分值与当前最新的 `config/moves_config.yaml` 配置物理完全对齐。
+用户要求将当前已完成的代码变更（包含步法几何差异化配置及其测试修正）提交到 Git 仓库。
 
 ### 评论
-维护单元测试与业务配置文件的同步一致性是保证系统鲁棒性的必要步骤。难度调整作为业务逻辑变更，应当伴随着测试用例数值的同步演进。
+这是一次高质量的重构和特性开发。通过将物理几何参数（半径和扫角因子）引入动作配置，我们不仅在 2D 渲染层面优雅地解决了回路重叠的“死胡同”问题，还为系统未来的物理真实性扩展奠定了基础。同步修正测试用例则确保了项目的持续集成质量。
 
 ### 目标
-1. 将 `test_verify_move_sequence_success` 中的总难度断言从 `4` 修正为符合最新配置的 `3`。
-2. 将 `test_verify_move_sequence_complex_chain` 中的总难度断言从 `7` 修正为符合最新配置的 `4`。
-3. 重新运行整个测试套件，验证所有 18 项测试用例全部通过。
+1. 将修改后的配置文件、后端引擎逻辑、前端渲染脚本以及单元测试文件添加到 Git 暂存区。
+2. 创建一个清晰、详尽的提交记录，说明此次变更的背景与核心逻辑。
 
 ### 基本原理
-直接修改 `tests/test_phase2_move_centric.py` 中对应的硬编码预期值，将其与 `moves_config.yaml` 中配置的各个动作难度求和公式（`1+2=3` 和 `1+1+2=4`）保持物理一致。
+遵循 Git 最佳实践，将相关的逻辑变更打包为一个原子提交。这有助于团队成员理解特性的演进过程，并确保历史记录的可追溯性。
 
 ### 标签
-#intent/fix #flow/ready #priority/high
-#comp/tests #concept/executor #scope/core
-#ai/delegate
-#task/domain/testing
-#task/object/test-suite
-#task/action/bug-fix
-#task/state/begin #task/status/active
+#intent/build #flow/ready #priority/medium
+#comp/engine #comp/runtime #comp/tests #comp/docs #concept/executor #scope/core #scope/ux
+#ai/instruct
+#task/domain/geometry #task/object/trajectory-renderer #task/action/integration
+#task/state/end #task/status/completed
 
 ---
 
 ### Script
 
-#### Acts 1: 修正第一个测试断言 (Stroke + FI Three-Turn)
-使用精确匹配替换 `tests/test_phase2_move_centric.py` 中 `test_verify_move_sequence_success` 的难度校验部分。
+#### Acts 1: 提交变更
+
+我们将把涉及到的 4 个核心文件添加到暂存区并进行提交。
 
 ~~~~~act
-patch_file
+git_add
+config/moves_config.yaml
+src/fsm_skating/services/engine.py
+web/js/state.js
 tests/test_phase2_move_centric.py
 ~~~~~
-~~~~~python.old
-    # 第二步: RFI --(Forward Inside Three-Turn)--> RBO
-    # Three-Turn 条件: 同脚(T), 变向(F), 变刃(F)
-    # 且 RFI 符合该动作的 Start Constraints (F, I)
-    step2 = res.trace[1]
-    assert str(step2.from_state) == "RFI"
-    assert step2.move.id == "forward_inside_three_turn"
-    assert str(step2.to_state) == "RBO"
-
-    # 难度: 1 (Stroke) + 3 (FI 3-Turn) = 4
-    assert res.total_difficulty == 4
-~~~~~
-~~~~~python.new
-    # 第二步: RFI --(Forward Inside Three-Turn)--> RBO
-    # Three-Turn 条件: 同脚(T), 变向(F), 变刃(F)
-    # 且 RFI 符合该动作的 Start Constraints (F, I)
-    step2 = res.trace[1]
-    assert str(step2.from_state) == "RFI"
-    assert step2.move.id == "forward_inside_three_turn"
-    assert str(step2.to_state) == "RBO"
-
-    # 难度: 1 (Stroke) + 2 (FI 3-Turn) = 3
-    assert res.total_difficulty == 3
-~~~~~
-
-#### Acts 2: 修正第二个测试断言 (Stroke + FI Mohawk + BI Three-Turn)
-使用精确匹配替换 `tests/test_phase2_move_centric.py` 中 `test_verify_move_sequence_complex_chain` 的难度断言部分。
 
 ~~~~~act
-patch_file
-tests/test_phase2_move_centric.py
+git_commit
 ~~~~~
-~~~~~python.old
-    res = engine.verify_move_sequence(moves, start_state=start)
+~~~~~text
+feat(engine,web): implement differentiated movement geometry factors
 
-    assert res.valid is True
-    assert str(res.trace[0].to_state) == "RFI"
-    assert str(res.trace[1].to_state) == "LBI"
-    assert str(res.trace[2].to_state) == "LFO"
-    assert res.total_difficulty == 1 + 2 + 4  # 7
-~~~~~
-~~~~~python.new
-    res = engine.verify_move_sequence(moves, start_state=start)
+Introduces 'geometry_config' in 'moves_config.yaml' to provide move-specific 'radius_factor' and 'sweep_angle_factor'. 
 
-    assert res.valid is True
-    assert str(res.trace[0].to_state) == "RFI"
-    assert str(res.trace[1].to_state) == "LBI"
-    assert str(res.trace[2].to_state) == "LFO"
-    assert res.total_difficulty == 1 + 1 + 2  # 4
-~~~~~
+This allows the trajectory renderer to draw non-overlapping spirals for state cycles (e.g., Three-Turn + Mohawk), improving visual clarity and physical realism.
 
-#### Acts 3: 重新运行单元测试
-再次执行测试套件以完成全部 18 个测试用例的覆盖校验。
+Changes:
+- Updated Move model and ChoreographyEngine to propagate geometry factors via API.
+- Refactored web/js/state.js to apply dynamic factors during 2D projection calculation.
+- Adjusted test assertions in tests/test_phase2_move_centric.py to align with updated difficulty levels in the configuration.
 
-~~~~~act
-run_command
-~~~~~
-~~~~~
-pytest
+Verified with 18/18 passing pytest cases.
 ~~~~~
 
 ### 下一步建议
-- **提交代码变更**：当确认 18 个单元测试全部成功通过后，建议生成一个包含 `git add` 和 `git commit` 的计划，以逻辑上完成这一阶段对于“引入步法几何差异化配置”的特性开发和测试修复，锁定工作进度。
+- **UI 深度润色**：可以考虑在前端 UI 的“步法流”或“状态流”详情中，展示每个步法的几何因子（半径缩放等），让教练或运动员更直观地理解该动作的物理特征。
+- **引入真实冰场比例**：目前 $R=50$ 是一个抽象数值，未来可以将其映射为真实的国际滑冰场比例（30m x 60m），使生成的轨迹具有实际的战术演练价值。
