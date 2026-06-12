@@ -1,72 +1,180 @@
-好的，我们已经完成了前端架构的模块化重构、渲染模型的物理对齐以及坐标系反转的修复。现在是时候将这些改进作为一个完整的逻辑单元提交了。
+我们将按照既定路线图，首先执行 **第一阶段：后端领域层与核心引擎重构（DAG 与状态推导）**。
 
-我将生成一个 `[COMMIT]` 计划，包含 `git add` 和 `git commit` 指令。
+在这一阶段，我们将通过精确修改代码库来：
+1. 在领域模型中添加状态推导演算和翻转的辅助函数。
+2. 升级校验响应结构，使其包含歧义性标记（`is_ambiguous`），以便后续前端和校验系统识别是否存在多重路径。
 
-## [COMMIT] refactor(web): implement ES6 module architecture and state-on-arc rendering model
+以下是本次修改的详细计划。
+
+## [WIP] refactor: 重构领域模型与校验引擎以支持状态推导与 DAG 路径识别
 
 ### 用户需求
-将前端代码重构为 ES6 模块化结构，并实现更符合直觉的“用刃在弧线、动点在节点”的滑冰动力学渲染模型，修复轨迹方向反转问题。
+系统需要具备通过物理相对条件推导下一个用刃状态的能力，并在验证状态序列时，能够识别出是否存在多重匹配路径（即歧义性/多样性），为后续的 DAG 渲染和动作驱动模式提供底层算法支持。
 
 ### 评论
-此次重构不仅大幅提升了前端代码的可维护性和开发者体验（DX），而且通过对物理模型的重新映射，使系统的视觉表达达到了专业步法编排的高度。纠正坐标系偏差后，冰面轨迹的实时渲染现在具有极高的物理参考价值。
+该重构不破坏现有的有状态校验逻辑，而是通过渐进式地丰富领域模型辅助方法和返回模型的元数据来增强系统扩展性。这为构建更高级的步法驱动（Move-Centric）校验打下了坚实的数理基础。
 
 ### 目标
-1.  将原本臃肿的 `app.js` 拆分为 `api.js` (通信)、`state.js` (物理计算)、`canvasRenderer.js` (渲染引擎) 和 `uiController.js` (界面交互)。
-2.  更新渲染逻辑：将滑行状态（State）标注在轨迹弧线上，将步法动作（Move）标注在转换节点上。
-3.  纠正 Canvas Y 轴向下导致的圆弧弯曲方向及起始状态渲染的数学错误。
+1. 在 `src/fsm_skating/domain/models.py` 中引入状态属性（脚、方向、用刃）的翻转辅助函数，并实现 `calculate_next_state` 状态演算器。
+2. 在 `src/fsm_skating/services/engine.py` 中升级 `VerificationResponse` 模型，新增 `is_ambiguous` 属性。
+3. 调整 `verify_sequence` 校验逻辑，自动计算状态链中是否存在具有多重候选动作的过渡段，并填充 `is_ambiguous` 标志。
 
 ### 基本原理
-通过采用原生 ES Modules，我们在无需外部构建工具的情况下实现了职责分离。在渲染层，通过修正圆心偏置和张角旋转的极坐标公式，消除了 $y$-down 坐标系对物理 CCW/CW 属性的干扰。
+当用户给定一个相对运动条件时，由于用刃状态是有限且完全对称的（L/R, F/B, O/I），我们可以通过对相应属性进行简单的布尔翻转来确定唯一的下一个状态。在校验端，通过检查每个转换步骤中的 `candidate_moves` 长度是否大于 1，可以判定整个序列在此步是否产生了分叉（即 DAG 的多重边），从而计算出 `is_ambiguous` 状态。
 
 ### 标签
-#intent/refine #flow/ready #priority/high 
-#comp/interfaces #concept/ui #scope/dx #scope/ux 
-#ai/delegate
-#task/domain/ui #task/object/module-refactor-and-rendering-model #task/action/refactor-and-fix
-#task/state/end #task/status/completed
+#intent/refine #flow/ready #priority/high
+#comp/engine #concept/state #scope/core
+#ai/instruct
+#task/domain/engine
+#task/object/dag-validation
+#task/action/refactor
+#task/state/begin #task/status/active
 
 ---
 
 ### Script
 
-#### Acts 1: 添加更改到暂存区
+#### Acts 1: 在领域模型中添加状态翻转与演算器
 
-我们将所有新建的 JS 模块文件以及修改后的 `index.html` 添加到 Git 暂存区。
-
-~~~~~act
-git_add
-web/index.html
-web/js/api.js
-web/js/state.js
-web/js/canvasRenderer.js
-web/js/uiController.js
-web/js/app.js
-~~~~~
-
-#### Acts 2: 提交变更
-
-创建一个详尽的提交记录，描述本次重构的核心改进。
+我们首先向 `models.py` 的尾部追加状态翻转和根据条件演算下一个状态的底层辅助函数。
 
 ~~~~~act
-git_commit
+patch_file
+src/fsm_skating/domain/models.py
 ~~~~~
-~~~~~text
-refactor(web): implement ES6 module architecture and state-on-arc rendering model
+~~~~~python.old
+# 8 个基础状态常量列表
+ALL_STATES = [
+    State(foot="L", direction="F", edge="O"),
+    State(foot="L", direction="F", edge="I"),
+    State(foot="L", direction="B", edge="O"),
+    State(foot="L", direction="B", edge="I"),
+    State(foot="R", direction="F", edge="O"),
+    State(foot="R", direction="F", edge="I"),
+    State(foot="R", direction="B", edge="O"),
+    State(foot="R", direction="B", edge="I"),
+]
+~~~~~
+~~~~~python.new
+# 8 个基础状态常量列表
+ALL_STATES = [
+    State(foot="L", direction="F", edge="O"),
+    State(foot="L", direction="F", edge="I"),
+    State(foot="L", direction="B", edge="O"),
+    State(foot="L", direction="B", edge="I"),
+    State(foot="R", direction="F", edge="O"),
+    State(foot="R", direction="F", edge="I"),
+    State(foot="R", direction="B", edge="O"),
+    State(foot="R", direction="B", edge="I"),
+]
 
-- Refactored the monolithic 'app.js' into a modular architecture:
-    - 'api.js': Encapsulates backend REST communication.
-    - 'state.js': Handles pure physical geometry and topology calculations.
-    - 'canvasRenderer.js': Manages 2D rendering, ISU symbols, and gestures.
-    - 'uiController.js': Isolates DOM manipulation and UI logic.
-- Implemented "Nodes are Moves, Arcs are States" rendering logic:
-    - Glide states (LFO, etc.) are now correctly displayed as labels along continuous arcs.
-    - Step transitions (Three-Turns, Brackets, etc.) are marked at intersection nodes.
-- Fixed physics and coordinate system bugs:
-    - Corrected arc curvature inversion caused by Canvas Y-down coordinate system.
-    - Fixed initial state rendering to ensure the first arc appears upon load.
-    - Improved reset logic to clear viewport matrices and restart pathing.
+
+def get_opposite_foot(foot: str) -> str:
+    return "R" if foot == "L" else "L"
+
+
+def get_opposite_direction(direction: str) -> str:
+    return "B" if direction == "F" else "F"
+
+
+def get_opposite_edge(edge: str) -> str:
+    return "I" if edge == "O" else "O"
+
+
+def calculate_next_state(current_state: State, conditions: dict) -> State:
+    """
+    根据相对运动物理条件计算并推导下一个滑行状态。
+    """
+    next_foot = (
+        current_state.foot
+        if conditions.get("same_foot", True)
+        else get_opposite_foot(current_state.foot)
+    )
+    next_dir = (
+        current_state.direction
+        if conditions.get("same_dir", True)
+        else get_opposite_direction(current_state.direction)
+    )
+    next_edge = (
+        current_state.edge
+        if conditions.get("same_edge", True)
+        else get_opposite_edge(current_state.edge)
+    )
+    return State(foot=next_foot, direction=next_dir, edge=next_edge)
+~~~~~
+
+#### Acts 2: 升级核心引擎校验模型与歧义性判定算法
+
+接着，我们修改 `engine.py`，向 `VerificationResponse` 添加 `is_ambiguous` 属性，并在验证方法执行结束前计算该值。
+
+~~~~~act
+patch_file
+src/fsm_skating/services/engine.py
+~~~~~
+~~~~~python.old
+class VerificationResponse(BaseModel):
+    valid: bool
+    error: Optional[str] = None
+    states: Optional[List[State]] = None
+    transitions: Optional[List[TransitionDetail]] = None
+    total_difficulty: int = 0
+~~~~~
+~~~~~python.new
+class VerificationResponse(BaseModel):
+    valid: bool
+    error: Optional[str] = None
+    states: Optional[List[State]] = None
+    transitions: Optional[List[TransitionDetail]] = None
+    total_difficulty: int = 0
+    is_ambiguous: bool = False
+~~~~~
+
+~~~~~act
+patch_file
+src/fsm_skating/services/engine.py
+~~~~~
+~~~~~python.old
+            transitions_details.append(
+                TransitionDetail(
+                    from_state=s_from,
+                    to_state=s_to,
+                    candidate_moves=matched_moves,
+                    selected_move=matched_moves[0],
+                )
+            )
+            total_difficulty += matched_moves[0].difficulty
+
+        return VerificationResponse(
+            valid=True,
+            states=states,
+            transitions=transitions_details,
+            total_difficulty=total_difficulty,
+        )
+~~~~~
+~~~~~python.new
+            transitions_details.append(
+                TransitionDetail(
+                    from_state=s_from,
+                    to_state=s_to,
+                    candidate_moves=matched_moves,
+                    selected_move=matched_moves[0],
+                )
+            )
+            total_difficulty += matched_moves[0].difficulty
+
+        is_ambiguous = any(len(t.candidate_moves) > 1 for t in transitions_details)
+
+        return VerificationResponse(
+            valid=True,
+            states=states,
+            transitions=transitions_details,
+            total_difficulty=total_difficulty,
+            is_ambiguous=is_ambiguous,
+        )
 ~~~~~
 
 ### 下一步建议
-- **后端扩展**：鉴于前端已经具备了专业的 ISU 符号渲染能力，下一步可以扩展后端 `moves_config.yaml` 动作库，增加更多复杂的步法（如 Twizzles, Loops）以及详细的定级描述。
-- **持久化功能**：可以考虑增加“导出为图片”或“保存编排到本地/云端”的功能，将编排好的轨迹图谱永久留存。
+1. **运行现有单元测试**：使用 `pytest` 运行测试套件（如 `tests/test_engine.py`），验证本次对 `VerificationResponse` 增加可选字段的修改是否完全向下兼容，没有破坏现有的校验断言。
+2. **编写对偶演算单元测试**：新增针对 `calculate_next_state` 状态推算器以及校验歧义性标志 `is_ambiguous` 的测试用例。
+3. **迈向第二阶段**：开始设计并实现动作驱动（Move-Centric）的完整校验方法 `verify_move_sequence`。

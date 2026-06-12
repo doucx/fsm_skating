@@ -63,6 +63,7 @@ class VerificationResponse(BaseModel):
     states: Optional[List[State]] = None
     transitions: Optional[List[TransitionDetail]] = None
     total_difficulty: int = 0
+    is_ambiguous: bool = False
 
 
 class ChoreographyEngine:
@@ -208,11 +209,14 @@ class ChoreographyEngine:
             )
             total_difficulty += matched_moves[0].difficulty
 
+        is_ambiguous = any(len(t.candidate_moves) > 1 for t in transitions_details)
+
         return VerificationResponse(
             valid=True,
             states=states,
             transitions=transitions_details,
             total_difficulty=total_difficulty,
+            is_ambiguous=is_ambiguous,
         )
 
     def generate_sequence(
