@@ -1,8 +1,8 @@
 import sys
 import argparse
 import os
-from typing import List, Tuple, Dict, Any, Optional
-from .engine import ChoreographyEngine
+from typing import List, Tuple, Optional
+from .engine import ChoreographyEngine, Move
 from .core import State, ALL_STATES
 
 
@@ -16,7 +16,7 @@ def get_state_desc(state: State) -> str:
     return f"{foot} {direction} {edge}"
 
 
-def export_path(path: List[Tuple[State, Optional[Dict[str, Any]]]]):
+def export_path(path: List[Tuple[State, Optional[Move]]]):
     """
     优雅导出编排结果。
     """
@@ -36,10 +36,10 @@ def export_path(path: List[Tuple[State, Optional[Dict[str, Any]]]]):
     for i in range(len(path) - 1):
         s_curr, m_next = path[i]
         s_next = path[i + 1][0]
-        # m_next 是从 s_curr 到 s_next 的动作
+        # m_next 是从 s_curr 到 s_next 的动作模型
         if m_next:
             rot_str = ""
-            rot_dir = m_next.get("rotation_dir")
+            rot_dir = m_next.rotation_dir
             if rot_dir == "CW":
                 rot_str = " [顺时针 ↻]"
                 cw_count += 1
@@ -48,9 +48,9 @@ def export_path(path: List[Tuple[State, Optional[Dict[str, Any]]]]):
                 ccw_count += 1
 
             print(
-                f"  第 {i + 1} 步: {s_curr} ──▶ {s_next} | {m_next['name']}{rot_str} (难度: {m_next['difficulty']})"
+                f"  第 {i + 1} 步: {s_curr} ──▶ {s_next} | {m_next.name}{rot_str} (难度: {m_next.difficulty})"
             )
-            total_difficulty += m_next["difficulty"]
+            total_difficulty += m_next.difficulty
 
     print("-" * 55)
     print("🔄 旋转转体多样性分析 (ISU 步法定级核心参考):")
@@ -110,8 +110,7 @@ def run_interactive(engine: ChoreographyEngine):
 
     current_state = start_state
     # path 中的元素为 (当前状态, 转移到下一个状态所需的动作)
-    # 最后一个状态对应的 move 为 None
-    path: List[Tuple[State, Optional[Dict[str, Any]]]] = [(current_state, None)]
+    path: List[Tuple[State, Optional[Move]]] = [(current_state, None)]
 
     while True:
         from .core import get_natural_curvature
@@ -127,7 +126,7 @@ def run_interactive(engine: ChoreographyEngine):
         seq_str = " -> ".join([str(s) for s, _ in path])
         print(f"🐾 已完成链路: {seq_str}")
 
-        # 获取当下合规的转移候选
+        # 获取当下合规的转移候选模型列表
         options = engine.get_possible_transitions(current_state, max_difficulty)
 
         if not options:
@@ -135,12 +134,12 @@ def run_interactive(engine: ChoreographyEngine):
         else:
             print("⬇️ 可选的下一个动作转移 (已通过排序引擎进行稳定排序):")
             for idx, opt in enumerate(options, 1):
-                nxt = opt["target_state"]
+                nxt = opt.target_state
                 nxt_curve = get_natural_curvature(nxt)
                 nxt_curve_str = "↻" if nxt_curve == "CW" else "↺"
 
-                move = opt["move"]
-                rot_dir = move.get("rotation_dir")
+                move = opt.move
+                rot_dir = move.rotation_dir
 
                 rot_info = ""
                 if rot_dir:
@@ -150,7 +149,7 @@ def run_interactive(engine: ChoreographyEngine):
                     rot_info = f" [下一步弧线: {nxt_curve_str}]"
 
                 print(
-                    f"  [{idx}] ──▶ {nxt} | {move['name']}{rot_info} (难度: {move['difficulty']})"
+                    f"  [{idx}] ──▶ {nxt} | {move.name}{rot_info} (难度: {move.difficulty})"
                 )
 
         print("-" * 45)
@@ -170,7 +169,6 @@ def run_interactive(engine: ChoreographyEngine):
                 print("[-] ⚠️ 已经是起始位置，无法再进行撤销！")
             else:
                 removed_state, _ = path.pop()
-                # 重新修正前一个状态的下一个转移 move 为 None
                 prev_state, _ = path[-1]
                 path[-1] = (prev_state, None)
                 current_state = prev_state
@@ -185,10 +183,10 @@ def run_interactive(engine: ChoreographyEngine):
 
                 # 完善前一个状态的指向 move
                 prev_state, _ = path[-1]
-                path[-1] = (prev_state, selected["move"])
+                path[-1] = (prev_state, selected.move)
 
                 # 迈入新状态
-                current_state = selected["target_state"]
+                current_state = selected.target_state
                 path.append((current_state, None))
             except ValueError:
                 print("[-] 无效输入。请输入数字序号、'u' 或 'e'。")
@@ -206,26 +204,27 @@ def run_verifier(engine: ChoreographyEngine):
     if not seq_str:
         return
 
+    # 返回 VerificationResponse Pydantic 模型
     res = engine.verify_sequence(seq_str)
-    if not res["valid"]:
-        print(f"\n❌ 验证失败！错误原因: {res['error']}")
+    if not res.valid:
+        print(f"\n❌ 验证失败！错误原因: {res.error}")
     else:
         print("\n" + "✨" * 15)
         print("✅ 验证通过！物理步法序列完全合法！")
-        print(f"🔥 总计难度系数: {res['total_difficulty']}")
+        print(f"🔥 总计难度系数: {res.total_difficulty}")
         print("📋 自动动作链条翻译明细:")
 
         cw_count = 0
         ccw_count = 0
 
-        for idx, trans in enumerate(res["transitions"], 1):
-            s_from = trans["from_state"]
-            s_to = trans["to_state"]
-            selected_move = trans["selected_move"]
-            candidates = trans["candidate_moves"]
+        for idx, trans in enumerate(res.transitions, 1):
+            s_from = trans.from_state
+            s_to = trans.to_state
+            selected_move = trans.selected_move
+            candidates = trans.candidate_moves
 
             rot_str = ""
-            rot_dir = selected_move.get("rotation_dir")
+            rot_dir = selected_move.rotation_dir
             if rot_dir == "CW":
                 rot_str = " [顺时针 ↻]"
                 cw_count += 1
@@ -236,11 +235,11 @@ def run_verifier(engine: ChoreographyEngine):
             print(f"  [{idx}] {s_from} ({get_state_desc(s_from)})")
             print(f"       └──▶ {s_to} ({get_state_desc(s_to)})")
             print(
-                f"            识别动作为: {selected_move['name']}{rot_str} (难度: {selected_move['difficulty']})"
+                f"            识别动作为: {selected_move.name}{rot_str} (难度: {selected_move.difficulty})"
             )
 
             if len(candidates) > 1:
-                other_names = [c["name"] for c in candidates[1:]]
+                other_names = [c.name for c in candidates[1:]]
                 print(f"            (同属于其它候选物理变换: {', '.join(other_names)})")
 
         print("-" * 45)
@@ -318,7 +317,6 @@ def run_generator(engine: ChoreographyEngine):
         )
         print("💡 建议：请调高动作难度上限阈值。")
     else:
-        # 将结构转化为 export 形式需要的 List[(State, Optional[Dict])]
         export_path(path)
 
 
@@ -354,7 +352,6 @@ def run_linter(engine: ChoreographyEngine):
         if generic > 0:
             print(f"  * ⚠️ 包含 {generic} 个通用备用动作 (未设定起滑方向约束)")
 
-        # 诊断建议
         if percentage == 100:
             print(
                 "  * 🌟 诊断: 优秀！该类步法具有100%全向覆盖，支持进行高精度的编排和细密难度微调。"
@@ -383,11 +380,9 @@ def main():
     )
     args = parser.parse_args()
 
-    # 初始化配置
     try:
         engine = ChoreographyEngine(args.config)
     except FileNotFoundError:
-        # 兜底寻找
         parent_config = os.path.join(
             os.path.dirname(__file__), "../../moves_config.yaml"
         )

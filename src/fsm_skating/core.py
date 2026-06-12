@@ -1,33 +1,19 @@
 from typing import Dict
+from pydantic import BaseModel, Field, ConfigDict
 
 
-class State:
+class State(BaseModel):
     """
     表示花样滑冰中的一个滑行瞬间状态。
     State = (Foot, Direction, Edge)
+    使用 Pydantic 进行数据校验与序列化支持。
     """
 
-    def __init__(self, foot: str, direction: str, edge: str):
-        foot = foot.upper()
-        direction = direction.upper()
-        edge = edge.upper()
+    model_config = ConfigDict(frozen=True)
 
-        if foot not in ("L", "R"):
-            raise ValueError(
-                f"Invalid Foot (脚): '{foot}'. Must be 'L' (左脚) or 'R' (右脚)."
-            )
-        if direction not in ("F", "B"):
-            raise ValueError(
-                f"Invalid Direction (方向): '{direction}'. Must be 'F' (前向) or 'B' (后向)."
-            )
-        if edge not in ("O", "I"):
-            raise ValueError(
-                f"Invalid Edge (用刃): '{edge}'. Must be 'O' (外刃) or 'I' (内刃)."
-            )
-
-        self.foot = foot
-        self.direction = direction
-        self.edge = edge
+    foot: str = Field(..., pattern="^[LR]$")
+    direction: str = Field(..., pattern="^[FB]$")
+    edge: str = Field(..., pattern="^[OI]$")
 
     @classmethod
     def from_string(cls, s: str) -> "State":
@@ -39,33 +25,18 @@ class State:
             raise ValueError(
                 f"Invalid state format: '{s}'. Must be 3 characters, e.g., 'LFO'."
             )
-        return cls(s[0], s[1], s[2])
+        return cls(foot=s[0], direction=s[1], edge=s[2])
 
     def __str__(self) -> str:
         return f"{self.foot}{self.direction}{self.edge}"
 
     def __repr__(self) -> str:
-        return f"State({self.foot}, {self.direction}, {self.edge})"
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, State):
-            return False
-        return (
-            self.foot == other.foot
-            and self.direction == other.direction
-            and self.edge == other.edge
-        )
-
-    def __hash__(self) -> int:
-        return hash((self.foot, self.direction, self.edge))
+        return f"State(foot='{self.foot}', direction='{self.direction}', edge='{self.edge}')"
 
 
 def get_relative_conditions(s1: State, s2: State) -> Dict[str, bool]:
     """
-    计算从状态 s1 转移到状态 s2 的相对物理条件比对属性：
-    - same_foot: 是否同脚
-    - same_dir: 是否同向
-    - same_edge: 是否同刃
+    计算从状态 s1 转移到状态 s2 的相对物理条件。
     """
     return {
         "same_foot": s1.foot == s2.foot,
@@ -76,9 +47,7 @@ def get_relative_conditions(s1: State, s2: State) -> Dict[str, bool]:
 
 def get_natural_curvature(state: State) -> str:
     """
-    根据滑行的物理力学，推导当前状态滑行轨迹的自然圆弧弯曲方向 (Curvature)：
-    - LFO / RFI / LBI / RBO 的圆弧弯曲为逆时针 (CCW)
-    - RFO / LFI / LBO / RBI 的圆弧弯曲为顺时针 (CW)
+    推导当前状态滑行轨迹的自然圆弧弯曲方向。
     """
     if state.foot == "L":
         if state.direction == "F":
@@ -94,12 +63,12 @@ def get_natural_curvature(state: State) -> str:
 
 # 8 个基础状态常量列表
 ALL_STATES = [
-    State("L", "F", "O"),
-    State("L", "F", "I"),
-    State("L", "B", "O"),
-    State("L", "B", "I"),
-    State("R", "F", "O"),
-    State("R", "F", "I"),
-    State("R", "B", "O"),
-    State("R", "B", "I"),
+    State(foot="L", direction="F", edge="O"),
+    State(foot="L", direction="F", edge="I"),
+    State(foot="L", direction="B", edge="O"),
+    State(foot="L", direction="B", edge="I"),
+    State(foot="R", direction="F", edge="O"),
+    State(foot="R", direction="F", edge="I"),
+    State(foot="R", direction="B", edge="O"),
+    State(foot="R", direction="B", edge="I"),
 ]
