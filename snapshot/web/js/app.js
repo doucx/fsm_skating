@@ -5,6 +5,7 @@ import * as ui from './uiController.js';
 
 let path = [];
 let renderer;
+let canvas; // 缓存 canvas 实例以供尺寸自适应调整
 
 // 动画状态
 let isAnimating = false;
@@ -14,8 +15,22 @@ let lastAnimTime = 0;
 let playbackSpeed = 1.0;
 const BASE_ANIM_DURATION = 1500; // 每步滑行基准 1.5 秒
 
+function resizeCanvas() {
+    if (!canvas) return;
+    if (document.fullscreenElement) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    } else {
+        // 保证画布渲染分辨率 (像素 buffer) 始终与其在页面中的实际 CSS 显示尺寸 1:1 映射，彻底杜绝拉伸
+        canvas.width = canvas.clientWidth || 600;
+        canvas.height = canvas.clientHeight || 200;
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     renderer = new CanvasRenderer("skate-canvas");
+    canvas = renderer.canvas;
+    resizeCanvas(); // 初始化画布尺寸
     initChoreography();
     initInteraction();
 
@@ -610,18 +625,24 @@ function initInteraction() {
 
     document.addEventListener("fullscreenchange", () => {
         renderer.resetViewport();
-        if (document.fullscreenElement) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        } else {
-            canvas.width = 600;
-            canvas.height = 200;
+        // 延迟一帧，等待浏览器全屏切换动效完成并重新测算布局，获取最精准的屏幕大小
+        requestAnimationFrame(() => {
+            resizeCanvas();
+            drawPath();
+        });
+    });
+
+    // 监听窗口尺寸变化，防止在窗口缩放时由于 CSS 100% 宽度拉伸画布
+    window.addEventListener("resize", () => {
+        if (!document.fullscreenElement) {
+            resizeCanvas();
+            drawPath();
         }
-        drawPath();
     });
 
     // 延时首帧绘制，确保 DOM 完全就绪、加载完毕
     setTimeout(() => {
+        resizeCanvas();
         drawPath();
     }, 100);
 }
