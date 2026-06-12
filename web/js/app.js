@@ -24,6 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.generateSequence = generateSequence;
     window.toggleFullscreen = toggleFullscreen;
     window.chooseNextMove = chooseNextMove;
+    window.copyTrajectorySource = copyTrajectorySource;
+    window.importTrajectorySource = importTrajectorySource;
 });
 
 function initChoreography() {
@@ -33,6 +35,7 @@ function initChoreography() {
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
     drawPath(); // 保证起始滑跑状态建立时，第一段滑行弧线就被立即绘制出来
+    updateTrajectorySourceUI();
 }
 
 function resetChoreography() {
@@ -54,7 +57,7 @@ async function fetchNextTransitions() {
         }
         ui.renderTransitionOptions(currState, options, chooseNextMove);
     } catch (err) {
-        container.innerHTML = `<p class="text-xs text-rose-400">加载推荐分支时出现网络故障。请确认后端服务已运行。</p>`;
+        container.innerHTML = `<p class="text-xs text-rose-400">加载推荐分支时出现 network 故障。请确认后端服务已运行。</p>`;
     }
 }
 
@@ -67,6 +70,7 @@ function chooseNextMove(nextStateObj, moveObj) {
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
     drawPath();
+    updateTrajectorySourceUI();
 }
 
 function undoMove() {
@@ -78,6 +82,7 @@ function undoMove() {
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
     drawPath();
+    updateTrajectorySourceUI();
 }
 
 let verifyMode = 'state';
@@ -244,6 +249,7 @@ function loadVerifiedPathToCanvas() {
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
     drawPath();
+    updateTrajectorySourceUI();
 }
 
 async function generateSequence() {
@@ -267,6 +273,7 @@ async function generateSequence() {
         fetchNextTransitions();
         ui.updateStats(path, undoMove);
         drawPath();
+        updateTrajectorySourceUI();
     } catch (err) {
         alert(`[-] 生成失败: ${err.message}`);
     }
@@ -355,4 +362,100 @@ function initInteraction() {
     setTimeout(() => {
         drawPath();
     }, 100);
+}
+
+function updateTrajectorySourceUI() {
+    const sourceData = path.map(step => ({
+        state: step.state,
+        move_id: step.move ? step.move.id : null
+    }));
+    document.getElementById("trajectory-source").value = JSON.stringify(sourceData);
+}
+
+async function copyTrajectorySource() {
+    const text = document.getElementById("trajectory-source").value;
+    if (!text) return;
+    try {
+        await navigator.clipboard.writeText(text);
+        const btn = document.getElementById("btn-copy-source");
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i><span class="text-emerald-400">已复制</span>';
+        btn.classList.add("border-emerald-500", "bg-emerald-950/20");
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove("border-emerald-500", "bg-emerald-950/20");
+        }, 1500);
+    } catch (err) {
+        console.error("复制失败: ", err);
+    }
+}
+
+async function importTrajectorySource() {
+    const sourceText = document.getElementById("trajectory-source").value.trim();
+    if (!sourceText) return;
+    try {
+        const jsonData = JSON.parse(sourceText);
+        if (!Array.isArray(jsonData) || jsonData.length === 0) {
+            alert("导入失败：请输入合法的 JSON 数组，例如: " + '[{"state": "LFO", "move_id": null}]');
+            return;
+        }
+
+        const statesList = jsonData.map(item => item.state).filter(Boolean);
+        if (statesList.length < 1) {
+            alert("导入失败：数据中未包含有效状态。");
+            return;
+        }
+
+        if (statesList.length === 1) {
+            const startState = statesList[0];
+            path = [{ state: startState, move: null }];
+            ui.updateCurrStateUI(startState);
+            fetchNextTransitions();
+            ui.updateStats(path, undoMove);
+            drawPath();
+            updateTrajectorySourceUI();
+            return;
+        }
+
+        const sequence = statesList.join(" -> ");
+        const data = await api.verifySequence(sequence);
+        if (!data.valid) {
+            alert(`导入失败，动力学合规校验未通过：\n${data.error}`);
+            return;
+        }
+
+        const newPath = [];
+        for (let i = 0; i < data.transitions.length; i++) {
+            const t = data.transitions[i];
+            const expectedMoveId = jsonData[i] ? jsonData[i].move_id : null;
+            
+            let matchedMove = t.candidate_moves.find(m => m.id === expectedMoveId);
+            if (!matchedMove) {
+                matchedMove = t.selected_move;
+            }
+
+            const fromStateStr = `${t.from_state.foot}${t.from_state.direction}${t.from_state.edge}`;
+            newPath.push({
+                state: fromStateStr,
+                move: matchedMove
+            });
+        }
+
+        const lastT = data.transitions[data.transitions.length - 1];
+        const lastStateStr = `${lastT.to_state.foot}${lastT.to_state.direction}${lastT.to_state.edge}`;
+        newPath.push({
+            state: lastStateStr,
+            move: null
+        });
+
+        path = newPath;
+        ui.updateCurrStateUI(path[path.length - 1].state);
+        fetchNextTransitions();
+        ui.updateStats(path, undoMove);
+        drawPath();
+        updateTrajectorySourceUI();
+
+    } catch (err) {
+        alert(`导入解析失败: ${err.message}`);
+    }
 }
