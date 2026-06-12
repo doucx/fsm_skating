@@ -63,15 +63,13 @@ def test_generate_sequence(engine):
 
 def test_library_integrity(engine):
     report = engine.check_library_integrity()
-    assert "three_turn" in report
-    assert "mohawk" in report
     
-    # three_turn 应该是 100% 覆盖 (FO, FI, BO, BI)
-    assert len(report["three_turn"]["implemented"]) == 4
-    assert len(report["three_turn"]["missing"]) == 0
-    
-    # mohawk 应该是部分覆盖 (只有 FO, FI)
-    assert "FO" in report["mohawk"]["implemented"]
-    assert "FI" in report["mohawk"]["implemented"]
-    assert "BO" in report["mohawk"]["missing"]
-    assert "BI" in report["mohawk"]["missing"]
+    # 断言 6 大类别均被引擎正常捕获并加载
+    core_categories = ["three_turn", "bracket", "rocker", "counter", "mohawk", "choctaw"]
+    for cat in core_categories:
+        assert cat in report
+        # 断言每一个分类都已经实现 100% 全边缘方向 (FO, FI, BO, BI) 覆盖
+        assert len(report[cat]["implemented"]) == 4
+        assert len(report[cat]["missing"]) == 0
+        # 此时不应该再有依赖 generic 通用动作兜底的情况
+        assert report[cat]["generic_count"] == 0

@@ -1,59 +1,49 @@
-这是一个非常有前瞻性且极具工程美学的设计！
+收到！看到动作库诊断报告中的“缺失方向”和括号未闭合等细节，我们现在开始进行完美修复。
 
-在专业花滑动作库的设计中，像转三步（Three-Turn）这类核心步法，理应在物理上穷尽 **4 种不同的进入用刃方向**：
-- **FO** (Forward Outside, 前外)
-- **FI** (Forward Inside, 前内)
-- **BO** (Backward Outside, 后外)
-- **BI** (Backward Inside, 后内)
+我们将：
+1. **修改 `cli.py` 中的括号缺陷**：将 `(ID: {cat_id}` 修正为 `(ID: {cat_id})`。
+2. **重写 `moves_config.yaml` 动作库**：将原先通用的 `bracket`、`rocker`、`counter`、`choctaw` 全面“精细化”分解为各自的 `FO`, `FI`, `BO`, `BI` 四向独立动作，并补全 `mohawk` 的 `BO`, `BI` 变体。
+3. **升级单元测试 `tests/test_engine.py`**：将测试断言从“部分覆盖”升级为“断言所有 6 大核心步法分类皆达到 100% 全天候完美覆盖”。
 
-如果某个步法（如 Mohawk 莫霍克步）在配置中只实现了部分方向（例如只有前内/前外，缺失后外/后内），这在专业编排中属于“动作库覆盖度缺失”。
+以下是本轮修复的计划。
 
-为了实现这一“完整性检查诊断器 (Linter)”，我们需要对数据结构和业务进行如下演进：
-1. **数据结构重构**：
-   - 在 `moves_config.yaml` 顶部，新增一个 `categories` 字典（声明转三、莫霍克等核心大类）。
-   - 在每个动作中，添加 `category` 指向大类。
-2. **逻辑编写**：
-   - 检查器收集大类，并检测该大类在 `moves` 列表中，是否完整实现了 `["FO", "FI", "BO", "BI"]` 四大变体（通过识别 `start_constraints` 得到 `variant`）。
-   - 如果没有 `start_constraints`，判定为“通用动作匹配（Fallback）”。
-3. **CLI 菜单扩展**：
-   - 新增第 4 个主功能菜单项：`4. 动作库完整性诊断 (Action Library Linter)`。
-
-下面是针对该诊断特性的实施计划。
-
-## [WIP] feat: 引入动作库完整性检查器 (Action Library Linter)
+## [WIP] feat: 补全全系列花滑步法边缘变体以达到 100% 覆盖度
 
 ### 用户需求
-引入步法大类分类模型，提供动作库完整性检查诊断器，自动扫描并分析有哪些核心步法缺失了哪些具体的边缘方向变体（FO, FI, BO, BI），以此促成动作库的完备。
+修复诊断器指出的动作覆盖不全问题，将通用的括弧步、摇滚步、计数步、莫霍克步、乔克陶步全面拆解并补齐为 `FO`, `FI`, `BO`, `BI` 变体，使动作库达到 100% 专业覆盖率。同时修复 CLI 输出括号未闭合的问题。
 
 ### 评论
-该项升级为整个编排系统引入了类似“静态代码分析”或“规范性 Lint”的机制，使得状态机配置的健壮性有了质的提升。它可以清晰指导动作设计者哪些难度需要进一步微调、哪些死角尚未被覆盖。
+这是一次重大的数据升级。精细化这 24 个动作（6大类 × 4向）后，引擎的模拟和评估精度将达到前所未有的竞技水平，彻底消除所有 generic 警告，给选手和教练呈上最精细的难度反馈。
 
 ### 目标
-1. **重写** `moves_config.yaml`（因为重构比例 >30%，完全符合 `write_strategy`，我们将完整重写），加入 categories 及各动作大类标记。
-2. **在 `engine.py` 中** 编写 `check_library_integrity` 函数，通过物理约束反向推演其变体覆盖度。
-3. **在 `cli.py` 中** 新增 `run_linter` 诊断界面，展示漂亮的图形化覆盖率诊断分析报告。
-4. **在 `tests/test_engine.py` 中** 编写集成诊断测试，确保检查器的输出结果 100% 准确。
+1. 修正 `cli.py` 中打印括号缺失的 Bug。
+2. 重写 `moves_config.yaml` 以提供完整 24 个方向细分动作，移除 generic 备用动作。
+3. 更新测试用例 `tests/test_engine.py`，断言 6 大类别覆盖率全员达到 100%。
+4. 运行 `pytest` 跑通测试。
 
 ### 基本原理
-- 变体推演：若动作约束为 `dir: "F", edge: "O"` ──▶ 标记为已实现 `FO` 变体。
-- 检查器自动将实现列表与标准集合 `{"FO", "FI", "BO", "BI"}` 进行对差异计算（Difference），输出精确的 Missing 集合。
+各步法的 4 种进入边缘变体对应的物理约束映射：
+- **前外 (FO)**: `dir: "F", edge: "O"`
+- **前内 (FI)**: `dir: "F", edge: "I"`
+- **后外 (BO)**: `dir: "B", edge: "O"`
+- **后内 (BI)**: `dir: "B", edge: "I"`
 
 ### 标签
 #intent/build #flow/ready #priority/high
-#comp/engine #comp/cli #comp/tests #concept/config #scope/core #scope/dx
+#comp/build #comp/cli #comp/tests #concept/config #scope/core #scope/ux
 #ai/delegate
 #task/domain/testing
 #task/object/library-linter
 #task/action/integration
-#task/state/begin #task/status/active
+#task/state/continue #task/status/active
 
 ---
 
 ### Script
 
-#### Acts 1: 重写 `moves_config.yaml` 引入分类元数据
+#### Acts 1: 完美重写 `moves_config.yaml` 补全 24 个变体动作
 
-我们新增 `categories` 节点，并为所有的动作条目关联 `category` 分类（对于非核心转体的基本过渡步，如蹬冰步等，无需列在 categories 中）。
+我们将动作库完整铺开，为括弧、摇滚、计数、莫霍克、乔克陶补齐 `FO`, `FI`, `BO`, `BI` 所有物理细分。
 
 ~~~~~act
 write_file
@@ -132,9 +122,9 @@ moves:
       dir: "B"
       edge: "I"
 
-  # --- 括弧步 (Bracket) ---
-  - id: "bracket"
-    name: "括弧步 (Bracket)"
+  # --- 括弧步细分 (Bracket) ---
+  - id: "forward_outside_bracket"
+    name: "前外括弧 (Forward Outside Bracket)"
     category: "bracket"
     difficulty: 4
     turn_rotation: "opposite"
@@ -142,10 +132,52 @@ moves:
       same_foot: true
       same_dir: false
       same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "O"
 
-  # --- 摇滚步 (Rocker) ---
-  - id: "rocker"
-    name: "摇滚步 (Rocker)"
+  - id: "forward_inside_bracket"
+    name: "前内括弧 (Forward Inside Bracket)"
+    category: "bracket"
+    difficulty: 4
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_bracket"
+    name: "后外括弧 (Backward Outside Bracket)"
+    category: "bracket"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_bracket"
+    name: "后内括弧 (Backward Inside Bracket)"
+    category: "bracket"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 摇滚步细分 (Rocker) ---
+  - id: "forward_outside_rocker"
+    name: "前外摇滚 (Forward Outside Rocker)"
     category: "rocker"
     difficulty: 4
     turn_rotation: "natural"
@@ -153,10 +185,52 @@ moves:
       same_foot: true
       same_dir: false
       same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "O"
 
-  # --- 计数步 (Counter) ---
-  - id: "counter"
-    name: "计数步 (Counter)"
+  - id: "forward_inside_rocker"
+    name: "前内摇滚 (Forward Inside Rocker)"
+    category: "rocker"
+    difficulty: 4
+    turn_rotation: "natural"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_rocker"
+    name: "后外摇滚 (Backward Outside Rocker)"
+    category: "rocker"
+    difficulty: 5
+    turn_rotation: "natural"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_rocker"
+    name: "后内摇滚 (Backward Inside Rocker)"
+    category: "rocker"
+    difficulty: 5
+    turn_rotation: "natural"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 计数步细分 (Counter) ---
+  - id: "forward_outside_counter"
+    name: "前外计数 (Forward Outside Counter)"
     category: "counter"
     difficulty: 4
     turn_rotation: "opposite"
@@ -164,6 +238,48 @@ moves:
       same_foot: true
       same_dir: false
       same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "O"
+
+  - id: "forward_inside_counter"
+    name: "前内计数 (Forward Inside Counter)"
+    category: "counter"
+    difficulty: 4
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_counter"
+    name: "后外计数 (Backward Outside Counter)"
+    category: "counter"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_counter"
+    name: "后内计数 (Backward Inside Counter)"
+    category: "counter"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "I"
 
   # --- 标准蹬冰步 (Stroke) ---
   - id: "stroke"
@@ -212,9 +328,35 @@ moves:
       dir: "F"
       edge: "O"
 
-  # --- 乔克陶步 (Choctaw) ---
-  - id: "choctaw"
-    name: "乔克陶步 (Choctaw)"
+  - id: "backward_outside_mohawk"
+    name: "后外莫霍克 (Backward Outside Mohawk)"
+    category: "mohawk"
+    difficulty: 4
+    turn_rotation: "natural"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_mohawk"
+    name: "后内莫霍克 (Backward Inside Mohawk)"
+    category: "mohawk"
+    difficulty: 4
+    turn_rotation: "natural"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 乔克陶步细分 (Choctaw) ---
+  - id: "forward_outside_choctaw"
+    name: "前外乔克陶 (Forward Outside Choctaw)"
     category: "choctaw"
     difficulty: 4
     turn_rotation: "opposite"
@@ -222,113 +364,59 @@ moves:
       same_foot: false
       same_dir: false
       same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "O"
+
+  - id: "forward_inside_choctaw"
+    name: "前内乔克陶 (Forward Inside Choctaw)"
+    category: "choctaw"
+    difficulty: 4
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_choctaw"
+    name: "后外乔克陶 (Backward Outside Choctaw)"
+    category: "choctaw"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_choctaw"
+    name: "后内乔克陶 (Backward Inside Choctaw)"
+    category: "choctaw"
+    difficulty: 5
+    turn_rotation: "opposite"
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "I"
 ~~~~~
 
-#### Acts 2: 在 `src/fsm_skating/engine.py` 中实现 Linter 校验分析逻辑
+#### Acts 2: 修复 `src/fsm_skating/cli.py` 括号未闭合问题
 
-在引擎尾部，增加 `check_library_integrity` 方法，通过提取动作起滑约束解析其实现的子变体（如 "FO" 等）。
-
-~~~~~act
-patch_file
-src/fsm_skating/engine.py
-~~~~~
-~~~~~python.old
-        # 组装返回结果
-        result = []
-        curr = init_state
-        for nxt_state, move in sub_path:
-            result.append((curr, move))
-            curr = nxt_state
-        result.append((curr, None))
-
-        return result
-~~~~~
-~~~~~python.new
-        # 组装返回结果
-        result = []
-        curr = init_state
-        for nxt_state, move in sub_path:
-            result.append((curr, move))
-            curr = nxt_state
-        result.append((curr, None))
-
-        return result
-
-    def check_library_integrity(self) -> Dict[str, Any]:
-        """
-        检查动作库中各类别动作的覆盖度 (FO, FI, BO, BI)。
-        返回各类别已实现和缺失的变体。
-        """
-        with open(self.config_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-        
-        categories = data.get("categories", {
-            "three_turn": "转三步 (Three-Turn)",
-            "bracket": "括弧步 (Bracket)",
-            "rocker": "摇滚步 (Rocker)",
-            "counter": "计数步 (Counter)",
-            "mohawk": "莫霍克步 (Mohawk)",
-            "choctaw": "乔克陶步 (Choctaw)"
-        })
-
-        required = ["FO", "FI", "BO", "BI"]
-        report = {}
-
-        for cat_id, cat_name in categories.items():
-            report[cat_id] = {
-                "name": cat_name,
-                "implemented": [],
-                "missing": list(required),
-                "generic_count": 0
-            }
-
-        # 遍历动作，依据约束反推其对应的特定边缘方向变体
-        for move in self.moves:
-            cat_id = move.get("category")
-            if not cat_id or cat_id not in report:
-                continue
-            
-            constraints = move.get("start_constraints")
-            if constraints and "dir" in constraints and "edge" in constraints:
-                variant = f"{constraints['dir']}{constraints['edge']}"
-                if variant in required:
-                    if variant not in report[cat_id]["implemented"]:
-                        report[cat_id]["implemented"].append(variant)
-                    if variant in report[cat_id]["missing"]:
-                        report[cat_id]["missing"].remove(variant)
-            else:
-                # 若无约束，判定为可通用捕获所有该方向转体动作的 Fallback 规则
-                report[cat_id]["generic_count"] += 1
-
-        return report
-~~~~~
-
-#### Acts 3: 在 `src/fsm_skating/cli.py` 中编写 TUI 诊断报告及主菜单集成
-
-编写 `run_linter` 诊断报告，并在主控制台中将该功能整合为第 4 菜单选项。
+我们将 `(ID: {cat_id}` 修改为 `(ID: {cat_id})`。
 
 ~~~~~act
 patch_file
 src/fsm_skating/cli.py
 ~~~~~
 ~~~~~python.old
-def main():
-    parser = argparse.ArgumentParser(description="花样滑冰步法智能编排状态机系统 CLI")
-~~~~~
-~~~~~python.new
-def run_linter(engine: ChoreographyEngine):
-    """
-    4. 动作库完整性诊断模块
-    """
-    print("\n❄️  进入 [4. 动作库完整性诊断模块] ❄️")
-    print("正在扫描动作配置文件中各核心步法的边缘覆盖度 (FO, FI, BO, BI)...")
-    
-    report = engine.check_library_integrity()
-    
-    print("\n" + "📊" * 15)
-    print("        📊 动作库完整性诊断报告 📊")
-    print("📊" * 15)
-    
     for cat_id, info in report.items():
         name = info["name"]
         impl = info["implemented"]
@@ -340,118 +428,30 @@ def run_linter(engine: ChoreographyEngine):
         
         print(f"\n📁 类别: {name} (ID: {cat_id}")
         print(f"  * 覆盖率: {percentage:.0f}% (已明确实现 {total}/4 个物理滑行变体)")
-        
-        if impl:
-            print(f"  * ✅ 已实现方向: {', '.join(impl)}")
-        if miss:
-            print(f"  * ❌ 缺失的方向: {', '.join(miss)}")
-        if generic > 0:
-            print(f"  * ⚠️ 包含 {generic} 个通用备用动作 (未设定起滑方向约束)")
-            
-        # 诊断建议
-        if percentage == 100:
-            print("  * 🌟 诊断: 优秀！该类步法具有100%全向覆盖，支持进行高精度的编排和细密难度微调。")
-        elif percentage > 0:
-            print("  * ⚠️ 诊断: 覆盖度不全。缺失的滑动方向将由通用动作托管，建议补齐具体方向以使难度评级更精准。")
-        else:
-            if generic > 0:
-                print("  * ℹ️ 诊断: 缺少方向细分。目前全部依靠通用动作，建议根据滑行轨迹细分为 FO/FI/BO/BI 变体。")
-            else:
-                print("  * 🔴 诊断: 极度匮乏！库中暂无此类别下的任何有效动作。")
-                
-    print("\n" + "📊" * 15 + "\n")
-
-
-def main():
-    parser = argparse.ArgumentParser(description="花样滑冰步法智能编排状态机系统 CLI")
-~~~~~
-
-~~~~~act
-patch_file
-src/fsm_skating/cli.py
-~~~~~
-~~~~~python.old
-    while True:
-        print("\n" + "=" * 50)
-        print("    ❄️  花样滑冰步法智能编排状态机系统 ⛸️")
-        print("=" * 50)
-        print("  1. 交互式手动编排模块 (Interactive Choreographer)")
-        print("  2. 序列解析与合法性验证模块 (Sequence Verifier)")
-        print("  3. 智能随机生成模块 (Auto-Generator)")
-        print("  4. 退出系统 (Exit)")
-        print("=" * 50)
-        choice = input("请选择功能序号 [1-4]: ").strip()
-
-        if choice == "1":
-            run_interactive(engine)
-        elif choice == "2":
-            run_verifier(engine)
-        elif choice == "3":
-            run_generator(engine)
-        elif choice == "4":
-            print("\n感谢使用！滑冰愉快！❄️")
-            break
-        else:
-            print("[-] 无效序号，请在 [1-4] 之间进行选择。")
 ~~~~~
 ~~~~~python.new
-    while True:
-        print("\n" + "=" * 50)
-        print("    ❄️  花样滑冰步法智能编排状态机系统 ⛸️")
-        print("=" * 50)
-        print("  1. 交互式手动编排模块 (Interactive Choreographer)")
-        print("  2. 序列解析与合法性验证模块 (Sequence Verifier)")
-        print("  3. 智能随机生成模块 (Auto-Generator)")
-        print("  4. 动作库完整性诊断 (Action Library Linter)")
-        print("  5. 退出系统 (Exit)")
-        print("=" * 50)
-        choice = input("请选择功能序号 [1-5]: ").strip()
-
-        if choice == "1":
-            run_interactive(engine)
-        elif choice == "2":
-            run_verifier(engine)
-        elif choice == "3":
-            run_generator(engine)
-        elif choice == "4":
-            run_linter(engine)
-        elif choice == "5":
-            print("\n感谢使用！滑冰愉快！❄️")
-            break
-        else:
-            print("[-] 无效序号，请在 [1-5] 之间进行选择。")
+    for cat_id, info in report.items():
+        name = info["name"]
+        impl = info["implemented"]
+        miss = info["missing"]
+        generic = info["generic_count"]
+        
+        total = len(impl)
+        percentage = (total / 4) * 100
+        
+        print(f"\n📁 类别: {name} (ID: {cat_id})")
+        print(f"  * 覆盖率: {percentage:.0f}% (已明确实现 {total}/4 个物理滑行变体)")
 ~~~~~
 
-#### Acts 4: 在 `tests/test_engine.py` 中编写 Linter 单元测试
+#### Acts 3: 升级测试文件 `tests/test_engine.py`
 
-确保诊断器计算转三步（100%全覆盖）和莫霍克步（2/4覆盖）的逻辑与变体反向分析绝对准确。
+修改测试中的覆盖率断言，使其严格约束 6 大类全部达到 100% 满覆盖率，并且不再有 generic 通用垫底动作。
 
 ~~~~~act
 patch_file
 tests/test_engine.py
 ~~~~~
 ~~~~~python.old
-def test_generate_sequence(engine):
-    # 测试随机生成 5 步
-    path = engine.generate_sequence(steps=5, max_difficulty=3, start_state=State.from_string("LFO"))
-    assert path is not None
-    assert len(path) == 6 # 5步动作产生 6 个状态
-    # 验证生成的每一步是否都真实存在且符合难度要求
-    for i in range(len(path) - 1):
-        move = path[i][1]
-        assert move["difficulty"] <= 3
-~~~~~
-~~~~~python.new
-def test_generate_sequence(engine):
-    # 测试随机生成 5 步
-    path = engine.generate_sequence(steps=5, max_difficulty=3, start_state=State.from_string("LFO"))
-    assert path is not None
-    assert len(path) == 6 # 5步动作产生 6 个状态
-    # 验证生成的每一步是否都真实存在且符合难度要求
-    for i in range(len(path) - 1):
-        move = path[i][1]
-        assert move["difficulty"] <= 3
-
 def test_library_integrity(engine):
     report = engine.check_library_integrity()
     assert "three_turn" in report
@@ -467,7 +467,21 @@ def test_library_integrity(engine):
     assert "BO" in report["mohawk"]["missing"]
     assert "BI" in report["mohawk"]["missing"]
 ~~~~~
+~~~~~python.new
+def test_library_integrity(engine):
+    report = engine.check_library_integrity()
+    
+    # 断言 6 大类别均被引擎正常捕获并加载
+    core_categories = ["three_turn", "bracket", "rocker", "counter", "mohawk", "choctaw"]
+    for cat in core_categories:
+        assert cat in report
+        # 断言每一个分类都已经实现 100% 全边缘方向 (FO, FI, BO, BI) 覆盖
+        assert len(report[cat]["implemented"]) == 4
+        assert len(report[cat]["missing"]) == 0
+        # 此时不应该再有依赖 generic 通用动作兜底的情况
+        assert report[cat]["generic_count"] == 0
+~~~~~
 
 ### 下一步建议
-- **执行验证**: 运行 `uv run fsm-skating` 进入功能菜单，选择 `4`。你将看到一个极具洞察力的诊断报告，直观显示三转步 100% 覆盖，而 Mohawk 缺失 `BO`、`BI` 的警告！
-- **下一步提交**: 验证无误后，我们生成 `[COMMIT]` 计划将此次富有深度和美感的 Linter 增强性功能提交！
+- **执行验证**: 运行 `uv run fsm-skating` 进入功能菜单选择 `4`。你会发现，所有的 6 大步法全都被标记为 **🌟 诊断: 优秀！该类步法具有100%全向覆盖...** 并且覆盖率全部显示 **100%**！
+- **最终提交**: 确认无误后，我们将生成 `[COMMIT]` 计划，将这次标志着系统动作数据库全面健全的伟大小结进行 Git 归档。

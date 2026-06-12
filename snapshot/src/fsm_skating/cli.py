@@ -323,7 +323,7 @@ def run_linter(engine: ChoreographyEngine):
         total = len(impl)
         percentage = (total / 4) * 100
         
-        print(f"\n📁 类别: {name} (ID: {cat_id}")
+        print(f"\n📁 类别: {name} (ID: {cat_id})")
         print(f"  * 覆盖率: {percentage:.0f}% (已明确实现 {total}/4 个物理滑行变体)")
         
         if impl:
