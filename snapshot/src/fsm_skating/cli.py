@@ -1,55 +1,3 @@
-测试完全通过，说明我们的 FSM 模型、相对滑行条件判定、双重约束匹配以及带有 DFS 回溯的智能生成算法逻辑都完全正确！
-
-接下来，我们将完成系统的最后一个关键部分：**命令行交互模块 (CLI)**。
-我们将：
-1. 编写 `src/fsm_skating/cli.py`：实现高可交互性的终端。
-   - **交互式手动编排模块**：支持按引导选择初始状态、动态推荐下一步可用动作（伴随难度和名称排序）、**动作实时回滚/撤销 (`u`)** 机制、以及**最终编排明细完美导出 (`e`)** 机制。
-   - **序列合法性验证模块**：支持用类似 `LFO -> LBI -> RFI` 的语法键入，自动校验并翻译出滑冰动作以及难度。
-   - **智能随机生成模块**：支持自定义步数、难度，系统利用 DFS 自动生成动作。
-2. 完善 `src/fsm_skating/core.py` 到 CLI 的中文翻译映射。
-
-下面是本次实施的计划。
-
-## [WIP] feat: 实现 CLI 命令行交互模块
-
-### 用户需求
-用户需要实现完整的系统功能规划：5.1 手动编排、5.2 序列解析校验、5.3 智能随机生成模块，并以可执行的 Python CLI 暴露出来。
-
-### 评论
-一个优秀、人性化的 TUI/CLI 设计，不仅能最大化展示后端 FSM 算法的强劲能力，还能通过撤销 (Undo)、图形化箭头链条以及动作中文化解析等细节，为滑冰者和教练员带来非凡的体验 (UX)。
-
-### 目标
-1. 编写 `src/fsm_skating/cli.py` 完整命令行，支持三大核心功能子模块。
-2. 运行测试并确保可以使用 `uv run fsm-skating` 进行交互。
-
-### 基本原理
-- 利用 `argparse` 进行命令行入口捕获。
-- 使用 `input()` 实现动态菜单式交互。
-- 引入 `get_state_desc` 函数将类似 `LFO` 的状态翻译为 “左脚 向前 外刃”，对非专业程序开发者非常友好。
-- 手动编排时使用路径栈（List）存储状态转移，利用 `pop()` 简单完美实现撤销功能。
-
-### 标签
-#intent/build #flow/ready #priority/high
-#comp/cli #concept/ui #scope/ux #scope/dx
-#ai/delegate
-#task/domain/ui
-#task/object/command-palette
-#task/action/integration
-#task/state/continue #task/status/active
-
----
-
-### Script
-
-#### Acts 1: 创建交互式命令行模块文件 `src/fsm_skating/cli.py`
-
-编写完整的三大功能逻辑以及路径导出和中文映射转换函数。
-
-~~~~~act
-write_file
-src/fsm_skating/cli.py
-~~~~~
-~~~~~python
 import sys
 import argparse
 from typing import List, Tuple, Dict, Any, Optional
@@ -332,9 +280,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-~~~~~
-
-### 下一步建议
-我们现在已经完整编写了物理模型 `core.py`、核心过滤与规则验证引擎 `engine.py`、外部化规则动作库 `moves_config.yaml` 已经测试用例 `tests/` 和 TUI/CLI 命令行交互界面 `cli.py`。
-
-既然现在这部分已经全部实现，我们将生成一个最终计划，来把修改后的内容保存，并通过 Git 来对这些文件进行提交，使之成为一个完整逻辑的工作交付单元。
