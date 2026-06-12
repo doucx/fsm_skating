@@ -36,7 +36,11 @@
                 <div class="ice-card rounded-2xl p-6 glow-ice">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-semibold flex items-center text-sky-300"><i class="fa-solid fa-compass mr-2"></i> 1. 交互式手动编排沙盒</h2>
-                        <button onclick="resetChoreography()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center transition"><i class="fa-solid fa-rotate-left mr-1"></i> 重置编排</button>
+                        <div class="flex space-x-3">
+                            <button onclick="exportPathToClipboard()" class="text-[10px] text-sky-400 hover:text-sky-300 flex items-center transition"><i class="fa-solid fa-copy mr-1"></i> 导出序列</button>
+                            <button onclick="importPathFromClipboard()" class="text-[10px] text-teal-400 hover:text-teal-300 flex items-center transition"><i class="fa-solid fa-file-import mr-1"></i> 导入序列</button>
+                            <button onclick="resetChoreography()" class="text-[10px] text-rose-400 hover:text-rose-300 flex items-center transition"><i class="fa-solid fa-rotate-left mr-1"></i> 重置</button>
+                        </div>
                     </div>
 
                     <!-- 参数设定 -->

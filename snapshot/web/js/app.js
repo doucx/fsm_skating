@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.handleVerify = handleVerify;
     window.switchVerifyMode = switchVerifyMode;
     window.loadVerifiedPathToCanvas = loadVerifiedPathToCanvas;
+    window.exportPathToClipboard = exportPathToClipboard;
+    window.importPathFromClipboard = importPathFromClipboard;
     window.generateSequence = generateSequence;
     window.toggleFullscreen = toggleFullscreen;
     window.chooseNextMove = chooseNextMove;
@@ -244,6 +246,66 @@ function loadVerifiedPathToCanvas() {
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
     drawPath();
+}
+
+async function exportPathToClipboard() {
+    if (path.length <= 1) {
+        alert("⚠️ 当前沙盒为空，无可导出的轨迹。");
+        return;
+    }
+
+    // 序列化为: LFO -> stroke -> RFI -> ...
+    const sequence = path.map((step, i) => {
+        let s = step.state;
+        if (step.move) s += ` -> ${step.move.id}`;
+        return s;
+    }).join(" -> ");
+
+    try {
+        await navigator.clipboard.writeText(sequence);
+        // 使用简单的提示，或者可以扩展为漂亮的 Toast
+        const btn = document.querySelector('button[onclick="exportPathToClipboard()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 已复制';
+        setTimeout(() => btn.innerHTML = originalText, 2000);
+    } catch (err) {
+        alert("无法访问剪贴板，请手动复制序列字符串。");
+    }
+}
+
+async function importPathFromClipboard() {
+    const input = prompt("请粘贴要导入的轨迹序列字符串\n(支持状态链如 'LFO -> RFI' 或步法链如 'stroke -> three_turn'):");
+    if (!input || !input.trim()) return;
+
+    const sequence = input.trim();
+    
+    // 自动判定模式：如果包含 LFO/RFI 等状态字样，尝试状态校验，否则尝试步法校验
+    const hasState = /[LR][FB][OI]/.test(sequence.toUpperCase());
+    
+    try {
+        if (hasState) {
+            const data = await api.verifySequence(sequence);
+            if (!data.valid) throw new Error(data.error);
+            window.verifiedPathData = data.transitions.map(t => ({
+                state: `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
+                move: t.selected_move
+            }));
+            window.verifiedInitialState = `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
+        } else {
+            const moveIds = sequence.split(/->|,|\s+/).map(m => m.trim().toLowerCase()).filter(m => m.length > 0);
+            const data = await api.verifyMovesSequence(moveIds, null);
+            if (!data.valid) throw new Error(data.error);
+            window.verifiedPathData = data.trace.map(t => ({
+                state: `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
+                move: t.move
+            }));
+            window.verifiedInitialState = `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
+        }
+        
+        loadVerifiedPathToCanvas();
+    } catch (err) {
+        alert(`[-] 导入失败：${err.message}`);
+    }
 }
 
 async function generateSequence() {
