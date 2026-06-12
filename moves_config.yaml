@@ -1,0 +1,133 @@
+moves:
+  # --- 变刃步 (Change of Edge) ---
+  - id: "change_of_edge"
+    name: "变刃滑行 (Change of Edge)"
+    difficulty: 1
+    conditions:
+      same_foot: true
+      same_dir: true
+      same_edge: false
+
+  # --- 转三步细分 (Three-Turn) ---
+  - id: "forward_outside_three_turn"
+    name: "前外转三 (Forward Outside Three-Turn)"
+    difficulty: 2
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "O"
+
+  - id: "forward_inside_three_turn"
+    name: "前内转三 (Forward Inside Three-Turn)"
+    difficulty: 3
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "backward_outside_three_turn"
+    name: "后外转三 (Backward Outside Three-Turn)"
+    difficulty: 5
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "O"
+
+  - id: "backward_inside_three_turn"
+    name: "后内转三 (Backward Inside Three-Turn)"
+    difficulty: 4
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    start_constraints:
+      dir: "B"
+      edge: "I"
+
+  # --- 括弧步 (Bracket) ---
+  - id: "bracket"
+    name: "括弧步 (Bracket)"
+    difficulty: 4
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: false
+    # 括弧步的物理转移状态条件与转三步相同，只是旋转方向不同。
+    # 这里我们允许不加 start_constraints，作为一个通用匹配项。
+
+  # --- 摇滚步 (Rocker) ---
+  - id: "rocker"
+    name: "摇滚步 (Rocker)"
+    difficulty: 4
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+
+  # --- 计数步 (Counter) ---
+  - id: "counter"
+    name: "计数步 (Counter)"
+    difficulty: 4
+    conditions:
+      same_foot: true
+      same_dir: false
+      same_edge: true
+
+  # --- 标准蹬冰步 (Stroke) ---
+  - id: "stroke"
+    name: "标准蹬冰步 (Standard Stroke)"
+    difficulty: 1
+    conditions:
+      same_foot: false
+      same_dir: true
+      same_edge: false
+
+  # --- 交叉步 (Cross Roll) ---
+  - id: "cross_roll"
+    name: "交叉步 (Cross Roll)"
+    difficulty: 2
+    conditions:
+      same_foot: false
+      same_dir: true
+      same_edge: true
+
+  # --- 莫霍克步细分 (Mohawk) ---
+  - id: "forward_inside_mohawk"
+    name: "前内莫霍克 (Forward Inside Mohawk)"
+    difficulty: 2
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "I"
+
+  - id: "forward_outside_mohawk"
+    name: "前外莫霍克 (Forward Outside Mohawk)"
+    difficulty: 3
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: true
+    start_constraints:
+      dir: "F"
+      edge: "O"
+
+  # --- 乔克陶步 (Choctaw) ---
+  - id: "choctaw"
+    name: "乔克陶步 (Choctaw)"
+    difficulty: 4
+    conditions:
+      same_foot: false
+      same_dir: false
+      same_edge: false
