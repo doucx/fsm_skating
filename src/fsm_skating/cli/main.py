@@ -2,8 +2,10 @@ import sys
 import argparse
 import os
 from typing import List, Tuple, Optional
-from .engine import ChoreographyEngine, Move
-from .core import State, ALL_STATES
+
+# 更新引入声明，分别引入领域层模型与服务层引擎
+from fsm_skating.domain.models import State, ALL_STATES
+from fsm_skating.services.engine import ChoreographyEngine, Move
 
 
 def get_state_desc(state: State) -> str:
@@ -36,7 +38,6 @@ def export_path(path: List[Tuple[State, Optional[Move]]]):
     for i in range(len(path) - 1):
         s_curr, m_next = path[i]
         s_next = path[i + 1][0]
-        # m_next 是从 s_curr 到 s_next 的动作模型
         if m_next:
             rot_str = ""
             rot_dir = m_next.rotation_dir
@@ -87,7 +88,6 @@ def run_interactive(engine: ChoreographyEngine):
     for idx, state in enumerate(ALL_STATES, 1):
         print(f"  [{idx}] {state} - {get_state_desc(state)}")
 
-    # 确定起始状态
     while True:
         start_idx = input("请输入起始状态序号 [1-8]: ").strip()
         try:
@@ -96,7 +96,6 @@ def run_interactive(engine: ChoreographyEngine):
         except (ValueError, IndexError):
             print("[-] 输入有误，请输入 1 到 8 之间的数字。")
 
-    # 确定难度限制
     while True:
         diff_str = input("请输入此套编排的最大允许动作难度限制 [1-5, 默认 5]: ").strip()
         if not diff_str:
@@ -109,11 +108,11 @@ def run_interactive(engine: ChoreographyEngine):
             print("[-] 请输入有效的整数难度。")
 
     current_state = start_state
-    # path 中的元素为 (当前状态, 转移到下一个状态所需的动作)
     path: List[Tuple[State, Optional[Move]]] = [(current_state, None)]
 
     while True:
-        from .core import get_natural_curvature
+        # 指向领域层，计算弯曲性质
+        from fsm_skating.domain.models import get_natural_curvature
 
         curr_curve = get_natural_curvature(current_state)
         curr_curve_str = "顺时针 ↻" if curr_curve == "CW" else "逆时针 ↺"
@@ -122,11 +121,9 @@ def run_interactive(engine: ChoreographyEngine):
         print(f"📍 当前滑行状态: {current_state} ({get_state_desc(current_state)})")
         print(f"🌀 当前滑行弧线: {curr_curve_str}")
 
-        # 实时打印已编排路径
         seq_str = " -> ".join([str(s) for s, _ in path])
         print(f"🐾 已完成链路: {seq_str}")
 
-        # 获取当下合规的转移候选模型列表
         options = engine.get_possible_transitions(current_state, max_difficulty)
 
         if not options:
@@ -181,11 +178,9 @@ def run_interactive(engine: ChoreographyEngine):
                     continue
                 selected = options[opt_idx]
 
-                # 完善前一个状态的指向 move
                 prev_state, _ = path[-1]
                 path[-1] = (prev_state, selected.move)
 
-                # 迈入新状态
                 current_state = selected.target_state
                 path.append((current_state, None))
             except ValueError:
@@ -204,7 +199,6 @@ def run_verifier(engine: ChoreographyEngine):
     if not seq_str:
         return
 
-    # 返回 VerificationResponse Pydantic 模型
     res = engine.verify_sequence(seq_str)
     if not res.valid:
         print(f"\n❌ 验证失败！错误原因: {res.error}")
@@ -267,7 +261,6 @@ def run_generator(engine: ChoreographyEngine):
     """
     print("\n❄️  进入 [3. 智能随机生成模块] ❄️")
 
-    # 捕获步数
     while True:
         steps_str = input("请输入想要编排的动作步数 (例如 6): ").strip()
         try:
@@ -279,7 +272,6 @@ def run_generator(engine: ChoreographyEngine):
         except ValueError:
             print("[-] 请输入合法的数字。")
 
-    # 捕获难度上限
     while True:
         diff_str = input("请输入动作难度的上限阈值 (例如 3): ").strip()
         try:
@@ -291,7 +283,6 @@ def run_generator(engine: ChoreographyEngine):
         except ValueError:
             print("[-] 请输入合法的数字。")
 
-    # 起始状态
     print("请选择起始状态选项:")
     print("  [0] 随机确定")
     for idx, state in enumerate(ALL_STATES, 1):

@@ -2,8 +2,10 @@ import os
 import yaml
 import random
 from typing import List, Dict, Tuple, Any, Optional
-from .core import State, get_relative_conditions, ALL_STATES
 from pydantic import BaseModel
+
+# 引入重构后的领域模型命名空间
+from fsm_skating.domain.models import State, get_relative_conditions, ALL_STATES
 
 
 def check_match(
@@ -11,13 +13,10 @@ def check_match(
 ) -> bool:
     """
     双重规则匹配逻辑。
-    1. 校验基础 conditions 转移差异是否匹配。
-    2. 校验起始状态约束 start_constraints (若有)。
     """
     conditions = move_config.get("conditions", {})
     actual_conditions = get_relative_conditions(current_state, target_state)
 
-    # 门禁一：基础关系比对
     if (
         conditions.get("same_foot") != actual_conditions["same_foot"]
         or conditions.get("same_dir") != actual_conditions["same_dir"]
@@ -25,7 +24,6 @@ def check_match(
     ):
         return False
 
-    # 门禁二：起始约束验证
     if "start_constraints" in move_config:
         constraints = move_config["start_constraints"]
         if "dir" in constraints and current_state.direction != constraints["dir"]:
@@ -37,10 +35,6 @@ def check_match(
 
 
 class Move(BaseModel):
-    """
-    表示一个滑冰动作的完整强类型模型。
-    """
-
     id: str
     name: str
     category: str
@@ -48,23 +42,15 @@ class Move(BaseModel):
     turn_rotation: Optional[str] = None
     conditions: Dict[str, bool]
     start_constraints: Optional[Dict[str, str]] = None
-    rotation_dir: Optional[str] = None  # 运行时根据惯性推导出的绝对旋转方向 (CW / CCW)
+    rotation_dir: Optional[str] = None
 
 
 class MoveOption(BaseModel):
-    """
-    转移选项模型，为 Web API 预留序列化能力。
-    """
-
     target_state: State
     move: Move
 
 
 class TransitionDetail(BaseModel):
-    """
-    单步物理转移的解析明细。
-    """
-
     from_state: State
     to_state: State
     candidate_moves: List[Move]
@@ -72,10 +58,6 @@ class TransitionDetail(BaseModel):
 
 
 class VerificationResponse(BaseModel):
-    """
-    序列解析与校验后的结构化响应报文。
-    """
-
     valid: bool
     error: Optional[str] = None
     states: Optional[List[State]] = None
@@ -114,24 +96,21 @@ class ChoreographyEngine:
                 continue
 
             for move_data in self.moves:
-                # 校验物理差异与约束匹配
                 if check_match(current_state, target_state, move_data):
                     diff = move_data.get("difficulty", 0)
                     if diff <= max_difficulty:
-                        # 计算绝对转体方向 (CW / CCW)
                         turn_rot = move_data.get("turn_rotation")
                         abs_rot = None
                         if turn_rot == "natural":
-                            from .core import get_natural_curvature
+                            from fsm_skating.domain.models import get_natural_curvature
 
                             abs_rot = get_natural_curvature(current_state)
                         elif turn_rot == "opposite":
-                            from .core import get_natural_curvature
+                            from fsm_skating.domain.models import get_natural_curvature
 
                             start_curv = get_natural_curvature(current_state)
                             abs_rot = "CW" if start_curv == "CCW" else "CCW"
 
-                        # 实例化强类型 Move 模型
                         move_obj = Move(
                             id=move_data["id"],
                             name=move_data["name"],
@@ -147,7 +126,6 @@ class ChoreographyEngine:
                             MoveOption(target_state=target_state, move=move_obj)
                         )
 
-        # 排序引擎：根据 (Difficulty, Name) 双键组合进行稳定升序排序
         results.sort(key=lambda x: (x.move.difficulty, x.move.name))
         return results
 
@@ -191,11 +169,11 @@ class ChoreographyEngine:
                     turn_rot = move_data.get("turn_rotation")
                     abs_rot = None
                     if turn_rot == "natural":
-                        from .core import get_natural_curvature
+                        from fsm_skating.domain.models import get_natural_curvature
 
                         abs_rot = get_natural_curvature(s_from)
                     elif turn_rot == "opposite":
-                        from .core import get_natural_curvature
+                        from fsm_skating.domain.models import get_natural_curvature
 
                         start_curv = get_natural_curvature(s_from)
                         abs_rot = "CW" if start_curv == "CCW" else "CCW"
@@ -218,7 +196,6 @@ class ChoreographyEngine:
                     error=f"无法识别的物理转移: 从状态 {s_from} 无法直接通过任何已知动作转移到 {s_to}。",
                 )
 
-            # 升序排序匹配的动作列表
             matched_moves.sort(key=lambda m: (m.difficulty, m.name))
 
             transitions_details.append(
@@ -243,7 +220,6 @@ class ChoreographyEngine:
     ) -> Optional[List[Tuple[State, Optional[Move]]]]:
         """
         智能随机生成模块。
-        返回列表结构：[(S0, M1), (S1, M2), ..., (Sn, None)]
         """
         if steps <= 0:
             return []

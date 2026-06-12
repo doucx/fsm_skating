@@ -1,10 +1,11 @@
 import pytest
 from pydantic import ValidationError
-from fsm_skating.core import State, get_relative_conditions
+
+# 从新的领域层 domain 模块引入核心类
+from fsm_skating.domain.models import State, get_relative_conditions
 
 
 def test_state_creation():
-    # Pydantic 必须使用关键字参数
     s = State(foot="L", direction="F", edge="O")
     assert str(s) == "LFO"
     assert s.foot == "L"
@@ -13,14 +14,12 @@ def test_state_creation():
 
 
 def test_state_invalid_creation():
-    # 1. 测试字段级别的 Pydantic 校验 (pattern 失败)
     with pytest.raises(ValidationError):
         State(foot="X", direction="F", edge="O")
 
     with pytest.raises(ValidationError):
         State(foot="L", direction="U", edge="O")
 
-    # 2. 测试自定义 factory 方法的逻辑校验
     with pytest.raises(ValueError, match="Invalid state format"):
         State.from_string("LF")
 

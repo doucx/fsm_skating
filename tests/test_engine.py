@@ -1,6 +1,8 @@
 import pytest
-from fsm_skating.engine import ChoreographyEngine
-from fsm_skating.core import State
+
+# 引入新的 services 层与 domain 层
+from fsm_skating.services.engine import ChoreographyEngine
+from fsm_skating.domain.models import State
 
 
 @pytest.fixture
@@ -14,13 +16,11 @@ def test_load_config(engine):
 
 
 def test_transitions_filtering(engine):
-    # LFO (左前外) -> LFI (左前内)
     current = State.from_string("LFO")
     results = engine.get_possible_transitions(current)
 
     lfi_moves = [r for r in results if str(r.target_state) == "LFI"]
     assert len(lfi_moves) >= 1
-    # 属性访问替换：r.move.id
     assert lfi_moves[0].move.id == "change_of_edge"
 
 
@@ -31,18 +31,15 @@ def test_rotation_direction_inference(engine):
     lbi_moves = [r for r in results if str(r.target_state) == "LBI"]
     assert len(lbi_moves) >= 2
 
-    # 属性访问替换：m.move.id
     three_turn = [m for m in lbi_moves if "three_turn" in m.move.id][0]
     bracket = [m for m in lbi_moves if "bracket" in m.move.id][0]
 
-    # 属性访问替换：move.rotation_dir
     assert three_turn.move.rotation_dir == "CCW"
     assert bracket.move.rotation_dir == "CW"
 
 
 def test_verify_sequence(engine):
     res = engine.verify_sequence("RFI -> LBI")
-    # 校验对象从 dict 改为 Response 实例
     assert res.valid is True
     assert res.transitions[0].selected_move.id == "forward_inside_mohawk"
 

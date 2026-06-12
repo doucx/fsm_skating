@@ -5,8 +5,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from fsm_skating.core import State
-from fsm_skating.engine import (
+# 重定向导入路径到新的 DDD 层次结构
+from fsm_skating.domain.models import State
+from fsm_skating.services.engine import (
     ChoreographyEngine,
     VerificationResponse,
     MoveOption,
@@ -19,7 +20,6 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# 开启 CORS 跨域支持，保障开发、调试灵活性
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,7 +28,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 解析路径，寻找配置文件
 config_path = os.path.join(os.path.dirname(__file__), "../../../moves_config.yaml")
 if not os.path.exists(config_path):
     config_path = "moves_config.yaml"
@@ -57,9 +56,6 @@ class GeneratedStep(BaseModel):
 
 @app.post("/api/verify", response_model=VerificationResponse)
 def verify_sequence(request: VerifyRequest):
-    """
-    接收类似 'LFO -> LBI' 的字符串，返回强类型化的步法翻译与多样性分析报告
-    """
     if not engine:
         raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
     return engine.verify_sequence(request.sequence)
@@ -67,9 +63,6 @@ def verify_sequence(request: VerifyRequest):
 
 @app.get("/api/transitions/{state_str}", response_model=List[MoveOption])
 def get_transitions(state_str: str, max_difficulty: int = Query(5, ge=1, le=5)):
-    """
-    提供当前滑行状态，动态拉取下一个方向的所有合法转移分支选项（带排序和旋转推导）
-    """
     if not engine:
         raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
     try:
@@ -82,9 +75,6 @@ def get_transitions(state_str: str, max_difficulty: int = Query(5, ge=1, le=5)):
 
 @app.post("/api/generate", response_model=List[GeneratedStep])
 def generate_sequence(request: GenerateRequest):
-    """
-    高阶路径搜索：利用 DFS 算法智能搜索并随机生成一段符合条件的闭环滑行链路
-    """
     if not engine:
         raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
 
@@ -109,15 +99,11 @@ def generate_sequence(request: GenerateRequest):
 
 @app.get("/api/integrity")
 def get_integrity_report():
-    """
-    检查动作库中各类别动作的覆盖度 (FO, FI, BO, BI)。
-    """
     if not engine:
         raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
     return engine.check_library_integrity()
 
 
-# 挂载 Web 可视化前端资源目录
 web_dir = os.path.join(os.path.dirname(__file__), "../../../web")
 if os.path.exists(web_dir):
     app.mount("/", StaticFiles(directory=web_dir, html=True), name="static")

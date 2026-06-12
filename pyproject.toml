@@ -21,5 +21,5 @@ dev-dependencies = [
 ]
 
 [project.scripts]
-fsm-skating = "fsm_skating.cli:main"
+fsm-skating = "fsm_skating.cli.main:main"
 fsm-skating-web = "fsm_skating.api.main:start"

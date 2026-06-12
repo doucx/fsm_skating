@@ -6,7 +6,6 @@ class State(BaseModel):
     """
     表示花样滑冰中的一个滑行瞬间状态。
     State = (Foot, Direction, Edge)
-    使用 Pydantic 进行数据校验与序列化支持。
     """
 
     model_config = ConfigDict(frozen=True)
