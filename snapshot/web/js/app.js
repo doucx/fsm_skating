@@ -572,15 +572,30 @@ function initCanvasInteraction() {
 
     canvas.addEventListener("wheel", (e) => {
         if (!document.fullscreenElement) return;
-        e.preventDefault(); // 阻止页面滚动
+        e.preventDefault();
 
-        const zoomSpeed = 0.08;
+        const mx = e.clientX;
+        const my = e.clientY;
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        const oldZoom = zoomFactor;
+        const zoomSpeed = 0.12;
+        
+        // 1. 更新缩放倍率
         if (e.deltaY < 0) {
             zoomFactor *= (1 + zoomSpeed);
         } else {
             zoomFactor /= (1 + zoomSpeed);
-            zoomFactor = Math.max(0.15, zoomFactor); // 设定最小收缩边界
+            zoomFactor = Math.max(0.1, zoomFactor);
         }
+
+        // 2. 核心数学：计算以鼠标为中心的平移补偿
+        // 公式：pan' = (M - C) - (z'/z) * (M - C - pan)
+        const ratio = zoomFactor / oldZoom;
+        panX = (mx - cx) - (mx - cx - panX) * ratio;
+        panY = (my - cy) - (my - cy - panY) * ratio;
+
         drawSkatePath(path);
     }, { passive: false });
 
