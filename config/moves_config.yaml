@@ -17,11 +17,11 @@ moves:
       same_dir: true
       same_edge: false
 
-  # --- 转三步细分 (Three-Turn) ---
+  # --- 转三步细分 (Three-Turn) - 基础步法 ---
   - id: "forward_outside_three_turn"
     name: "前外转三 (Forward Outside Three-Turn)"
     category: "three_turn"
-    difficulty: 2
+    difficulty: 1   # [调整] 最基础的入门转三
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -34,7 +34,7 @@ moves:
   - id: "forward_inside_three_turn"
     name: "前内转三 (Forward Inside Three-Turn)"
     category: "three_turn"
-    difficulty: 3
+    difficulty: 2   # [调整] 略难于前外
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -47,7 +47,7 @@ moves:
   - id: "backward_outside_three_turn"
     name: "后外转三 (Backward Outside Three-Turn)"
     category: "three_turn"
-    difficulty: 5
+    difficulty: 3   # [调整] 基础转三中最难的一个，但仍不是复杂步法
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -60,7 +60,7 @@ moves:
   - id: "backward_inside_three_turn"
     name: "后内转三 (Backward Inside Three-Turn)"
     category: "three_turn"
-    difficulty: 4
+    difficulty: 2   # [调整] 比后外转三好控制
     turn_rotation: "natural"
     conditions:
       same_foot: true
@@ -70,7 +70,7 @@ moves:
       dir: "B"
       edge: "I"
 
-  # --- 括弧步细分 (Bracket) ---
+  # --- 括弧步细分 (Bracket) - ISU 复杂步法 ---
   - id: "forward_outside_bracket"
     name: "前外括弧 (Forward Outside Bracket)"
     category: "bracket"
@@ -123,7 +123,7 @@ moves:
       dir: "B"
       edge: "I"
 
-  # --- 摇滚步细分 (Rocker) ---
+  # --- 摇滚步细分 (Rocker) - ISU 复杂步法 ---
   - id: "forward_outside_rocker"
     name: "前外摇滚 (Forward Outside Rocker)"
     category: "rocker"
@@ -176,7 +176,7 @@ moves:
       dir: "B"
       edge: "I"
 
-  # --- 计数步细分 (Counter) ---
+  # --- 计数步细分 (Counter) - ISU 复杂步法 ---
   - id: "forward_outside_counter"
     name: "前外计数 (Forward Outside Counter)"
     category: "counter"
@@ -249,11 +249,11 @@ moves:
       same_dir: true
       same_edge: true
 
-  # --- 莫霍克步细分 (Mohawk) ---
+  # --- 莫霍克步细分 (Mohawk) - 基础步法 ---
   - id: "forward_inside_mohawk"
     name: "前内莫霍克 (Forward Inside Mohawk)"
     category: "mohawk"
-    difficulty: 2
+    difficulty: 1   # [调整] 最常见的起滑过渡动作，极其基础
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -266,7 +266,7 @@ moves:
   - id: "forward_outside_mohawk"
     name: "前外莫霍克 (Forward Outside Mohawk)"
     category: "mohawk"
-    difficulty: 3
+    difficulty: 3   # [调整] 外刃莫霍克需要更多控制力，较难但非复杂步
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -279,7 +279,7 @@ moves:
   - id: "backward_outside_mohawk"
     name: "后外莫霍克 (Backward Outside Mohawk)"
     category: "mohawk"
-    difficulty: 4
+    difficulty: 3   # [调整]
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -292,7 +292,7 @@ moves:
   - id: "backward_inside_mohawk"
     name: "后内莫霍克 (Backward Inside Mohawk)"
     category: "mohawk"
-    difficulty: 4
+    difficulty: 2   # [核心调整] 由原来的 4 降至 2。这是非常简单流畅的开式后滑变前滑动作。
     turn_rotation: "natural"
     conditions:
       same_foot: false
@@ -302,7 +302,7 @@ moves:
       dir: "B"
       edge: "I"
 
-  # --- 乔克陶步细分 (Choctaw) ---
+  # --- 乔克陶步细分 (Choctaw) - ISU 复杂步法 ---
   - id: "forward_outside_choctaw"
     name: "前外乔克陶 (Forward Outside Choctaw)"
     category: "choctaw"
