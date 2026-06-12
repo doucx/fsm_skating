@@ -43,7 +43,7 @@ class Move(BaseModel):
     conditions: Dict[str, bool]
     start_constraints: Optional[Dict[str, str]] = None
     rotation_dir: Optional[str] = None
-    geometry_config: Optional[Dict[str, float]] = None # 新增透传因子字段
+    geometry_config: Optional[Dict[str, float]] = None  # 新增透传因子字段
 
 
 class MoveOption(BaseModel):
@@ -135,7 +135,9 @@ class ChoreographyEngine:
                             conditions=move_data["conditions"],
                             start_constraints=move_data.get("start_constraints"),
                             rotation_dir=abs_rot,
-                            geometry_config=move_data.get("geometry_config"), # 动态装配
+                            geometry_config=move_data.get(
+                                "geometry_config"
+                            ),  # 动态装配
                         )
 
                         results.append(
@@ -203,7 +205,7 @@ class ChoreographyEngine:
                         conditions=move_data["conditions"],
                         start_constraints=move_data.get("start_constraints"),
                         rotation_dir=abs_rot,
-                        geometry_config=move_data.get("geometry_config"), # 动态装配
+                        geometry_config=move_data.get("geometry_config"),  # 动态装配
                     )
                     matched_moves.append(move_obj)
 
@@ -317,7 +319,7 @@ class ChoreographyEngine:
                 conditions=move_data["conditions"],
                 start_constraints=move_data.get("start_constraints"),
                 rotation_dir=abs_rot,
-                geometry_config=move_data.get("geometry_config"), # 动态装配
+                geometry_config=move_data.get("geometry_config"),  # 动态装配
             )
 
             trace_details.append(
