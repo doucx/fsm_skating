@@ -1,56 +1,129 @@
-好的，我们已经通过物理路径重构成功解决了时间轴刷新滞后的问题。该方案不仅消除了步数相同时的渲染拦截 Bug，还通过动静分离的渲染策略提升了系统在高频动画下的运行稳定性。
+这个问题的根源在于：**Canvas 内部缓冲区的分辨率（`width` / `height` 属性）与它在屏幕上实际呈现的 CSS 尺寸不一致。**
 
-现在是时候将这个改进作为一个完整的逻辑单元进行提交了。
+当点击全屏时，浏览器会有极短的过渡动画。如果在 `fullscreenchange` 事件触发的瞬间立刻获取 `window.innerWidth`，可能会获取到一个中间态的尺寸。然而，CSS 的 `100vw !important` 会强制将 Canvas 撑满全屏，这就导致了缓冲分辨率和显示分辨率脱节，从而引发拉伸和失真。
 
-## [COMMIT] fix(web): 彻底修复时间轴刷新滞后问题并重构渲染调度逻辑
+事实上，这种硬编码分配宽高的做法，不仅在全屏时会出问题，在正常的响应式窗口缩放时也会导致画面压扁或拉长。
+
+我将生成一个计划来彻底根治这个问题：引入现代的 `ResizeObserver`，让 Canvas 的内部分辨率时刻自动匹配其真实的 CSS 渲染尺寸。
+
+## [WIP] fix(web): 修复全屏切换及窗口缩放时的 Canvas 画面拉伸失真
+
+### 错误分析
+
+**错误原因**: 
+在 `app.js` 的 `fullscreenchange` 监听器中，使用了硬编码 (`window.innerWidth` 或 `600/200`) 来设定 Canvas 的分辨率。这种做法在全屏过渡动画期间往往无法获取最终正确的尺寸。另外，非全屏模式下使用了 Tailwind CSS 的 `w-full`（100%宽度），如果容器宽度不是刚好 600px，同样会导致 x 轴拉伸。
+
+**解决方案**:
+1. 移除 `fullscreenchange` 中对 Canvas 宽高的硬性设置。
+2. 在 `drawPath` 渲染入口处，通过 `getBoundingClientRect()` 获取画布当前的真实 DOM 物理尺寸，并将其同步赋予 Canvas 的内部 `width` 和 `height`，确保 **1:1 像素映射**。
+3. 在 `initInteraction` 中引入 `ResizeObserver`。这样一来，无论是全屏过渡、退出全屏，还是用户拖拽改变浏览器窗口大小，都能触发自动重绘和分辨率矫正，从而保证画面永远是 100% 原比例、不拉伸。
 
 ### 用户需求
-修复“轨迹动态模拟”模块底层的时间轴在“自动规划”和“导入”等长轨迹时无法刷新的 Bug，同时确保不影响动画回放性能。
+在进入或退出全屏时，保持画面的比例正常，解决因为屏幕拉伸造成的视觉失真。
 
 ### 评论
-这是一次非常到位的架构重构。通过将“何时更新 DOM”的决策权从底层的叶子函数（`updateLinearTimelineUI`）上移到业务逻辑入口层（如 `chooseNextMove`, `generateSequence`），我们不仅解决了由于不可靠缓存导致的显示错误，还理顺了 Canvas 高频动画重绘与 DOM 低频结构更新之间的协作关系。
+使用 `ResizeObserver` 和自适应分辨率同步是 HTML5 Canvas 开发中的最佳实践。这个补丁不仅修复了全屏问题，还顺带赋予了沙盒画布完美的响应式（Responsive）自适应能力，它现在可以在任何分辨率的设备下保持物理级别的清晰和不变形。
 
 ### 目标
-1. 将 `web/js/app.js` 中的修改（`drawPath` 重构及其调用处的更新）添加至暂存区。
-2. 创建一个详细说明此项重构意义的 Git 提交。
+1. 修改 `drawPath`，加入 Canvas 分辨率自适应同步逻辑。
+2. 引入 `ResizeObserver`。
+3. 移除旧的 `fullscreenchange` 宽高硬编码代码。
 
 ### 基本原理
-通过引入 `updateTimeline` 标志位，我们将系统的渲染管线划分为“轻量级（仅 Canvas 帧刷新）”和“重量级（Canvas + DOM 结构重建）”两种模式。这使得我们在保证数据绝对准确性的同时，依然维持了极高性能的交互体验。
+当 Canvas 的 `width` 属性等同于其在 DOM 中计算出的渲染 `clientWidth` 时，浏览器就不会对其像素进行任何拉伸或挤压操作。`ResizeObserver` 会精准捕捉 CSS 布局导致的大小变动，然后驱动引擎重算一次投影矩阵。
 
 ### 标签
-#intent/refine #flow/ready #priority/high #comp/ui #scope/ux #scope/dx #ai/instruct #task/domain/ui #task/object/rendering-pipeline #task/action/fix #task/state/end #task/status/completed
+#intent/fix #flow/ready #priority/high #comp/ui #scope/ux #ai/brainstorm #task/domain/ui #task/object/canvas-rendering #task/action/fix #task/state/begin
 
 ---
 
 ### Script
 
-#### Acts 1: 提交变更
-
-我们将修改后的 `web/js/app.js` 提交至仓库，正式关闭此项 UI 优化任务。
+#### Acts 1: 让 `drawPath` 自动同步 Canvas 分辨率
 
 ~~~~~act
-git_add
+patch_file
 web/js/app.js
 ~~~~~
+~~~~~javascript
+function drawPath(updateTimeline = false) {
+    const geometry = computeGeometry(path);
+    renderer.draw(geometry);
+    
+    if (updateTimeline) {
+        updateLinearTimelineUI(geometry);
+    }
+~~~~~
+~~~~~javascript
+function drawPath(updateTimeline = false) {
+    // 动态同步画布内部分辨率以匹配实际 CSS 渲染尺寸，彻底解决拉伸变形
+    const canvas = renderer.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const targetW = Math.floor(rect.width);
+    const targetH = Math.floor(rect.height);
+    
+    if (targetW > 0 && targetH > 0 && (canvas.width !== targetW || canvas.height !== targetH)) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+    }
+
+    const geometry = computeGeometry(path);
+    renderer.draw(geometry);
+    
+    if (updateTimeline) {
+        updateLinearTimelineUI(geometry);
+    }
+~~~~~
+
+#### Acts 2: 引入 ResizeObserver 并清理旧的硬编码
 
 ~~~~~act
-git_commit
+patch_file
+web/js/app.js
 ~~~~~
-~~~~~text
-fix(web): decouple timeline DOM updates from animation loop
+~~~~~javascript
+    document.addEventListener("fullscreenchange", () => {
+        renderer.resetViewport();
+        if (document.fullscreenElement) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        } else {
+            canvas.width = 600;
+            canvas.height = 200;
+        }
+        drawPath();
+    });
 
-Fixed a synchronization bug where the bottom timeline segments failed to update during "Auto-Generate" or "Import" operations if the new trajectory's length matched the previous one.
+    // 延时首帧绘制，确保 DOM 完全就绪、加载完毕
+    setTimeout(() => {
+        drawPath();
+    }, 100);
+}
+~~~~~
+~~~~~javascript
+    document.addEventListener("fullscreenchange", () => {
+        renderer.resetViewport();
+        // 移除硬编码宽高设定，转交 ResizeObserver 和 drawPath 动态同步
+        drawPath();
+    });
 
-Changes:
-- Removed unreliable 'lastCount' caching logic from updateLinearTimelineUI.
-- Refactored drawPath() to support an optional 'updateTimeline' flag.
-- Optimized performance by disabling DOM reconstruction during high-frequency animation frames (drawPath(false)).
-- Explicitly enabled DOM reconstruction (drawPath(true)) during path mutation events: initialization, step selection, undo, verification loading, path generation, and source importing.
+    // 使用 ResizeObserver 监听画布 CSS 尺寸的实时变化（例如进入全屏过渡、窗口大小调整等）
+    const resizeObserver = new ResizeObserver(() => {
+        drawPath();
+    });
+    resizeObserver.observe(canvas);
 
-This refactoring ensures 100% UI accuracy for path structure changes while maintaining smooth, high-FPS canvas animations.
+    // 延时首帧绘制，确保 DOM 完全就绪、加载完毕
+    setTimeout(() => {
+        drawPath();
+    }, 100);
+}
 ~~~~~
 
 ### 下一步建议
-- **回归测试**: 建议在不同步长、不同起滑状态下多次尝试“自动规划路径”，确认底部的色块分配（左/右脚颜色）始终与上方的 Canvas 轨迹完全同步。
-- **性能评估**: 在低性能设备（如平板或旧款笔记本）上测试全屏播放功能，验证 DOM 操作的剥离是否有效减轻了浏览器的渲染负担。
-- **UI 增强**: 接下来可以考虑为时间轴上的 `timeline-marker`（动作节点）增加悬浮展示动作名称的功能，进一步增强沙盒的分析能力。
+
+代码已更新。
+现在你可以：
+1. **刷新浏览器页面**以应用新逻辑。
+2. 尝试点击“全屏”按钮，在进入全屏和退出全屏时观察画面是否依然保持 1:1 的原比例，不应有任何拉伸。
+3. （进阶验证）在非全屏状态下，尝试随意改变浏览器的窗口大小，观察冰面轨迹也会智能地重新排布并保持完美的清晰度。

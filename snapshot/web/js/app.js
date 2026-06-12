@@ -290,6 +290,17 @@ async function generateSequence() {
 }
 
 function drawPath(updateTimeline = false) {
+    // 动态同步画布内部分辨率以匹配实际 CSS 渲染尺寸，彻底解决拉伸变形
+    const canvas = renderer.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const targetW = Math.floor(rect.width);
+    const targetH = Math.floor(rect.height);
+    
+    if (targetW > 0 && targetH > 0 && (canvas.width !== targetW || canvas.height !== targetH)) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+    }
+
     const geometry = computeGeometry(path);
     renderer.draw(geometry);
     
@@ -610,15 +621,15 @@ function initInteraction() {
 
     document.addEventListener("fullscreenchange", () => {
         renderer.resetViewport();
-        if (document.fullscreenElement) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        } else {
-            canvas.width = 600;
-            canvas.height = 200;
-        }
+        // 移除硬编码宽高设定，转交 ResizeObserver 和 drawPath 动态同步
         drawPath();
     });
+
+    // 使用 ResizeObserver 监听画布 CSS 尺寸的实时变化（例如进入全屏过渡、窗口大小调整等）
+    const resizeObserver = new ResizeObserver(() => {
+        drawPath();
+    });
+    resizeObserver.observe(canvas);
 
     // 延时首帧绘制，确保 DOM 完全就绪、加载完毕
     setTimeout(() => {
