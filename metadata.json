@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "Capture: M engine.py", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781245669.0834649, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] fix: 修复时间轴进度条在等长轨迹下未能刷新的问题", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781245901.0093336, "duration_ms": 0}}

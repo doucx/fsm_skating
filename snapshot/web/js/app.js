@@ -312,10 +312,10 @@ function updateLinearTimelineUI(geometry) {
         return;
     }
 
-    // 只有当路径步数发生变化时才重新渲染背景片段，优化性能
-    const currentStepCount = arcs.length;
-    if (container.dataset.lastCount == currentStepCount) return;
-    container.dataset.lastCount = currentStepCount;
+    // 只有当路径状态序列发生变化时才重新渲染背景片段，优化性能
+    const currentSignature = arcs.map(a => a.state).join('-');
+    if (container.dataset.lastSignature === currentSignature) return;
+    container.dataset.lastSignature = currentSignature;
 
     container.innerHTML = "";
     const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
