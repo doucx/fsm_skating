@@ -302,18 +302,27 @@ function toggleAnimation() {
     
     const icon = document.getElementById("play-icon");
     const text = document.getElementById("play-text");
+    const fsIcon = document.getElementById("fs-play-icon");
+    const fsText = document.getElementById("fs-play-text");
     const overlay = document.getElementById("playback-overlay");
 
     if (isAnimating) {
-        icon.className = "fa-solid fa-pause mr-1.5";
+        const pauseIcon = "fa-solid fa-pause";
+        icon.className = pauseIcon + " mr-1.5";
+        fsIcon.className = pauseIcon;
         text.innerText = "暂停回放";
+        fsText.innerText = "暂停";
+        
         overlay.classList.remove("hidden");
         if (animProgress >= 1.0) animProgress = 0;
         lastAnimTime = performance.now();
         requestAnimationFrame(animationLoop);
     } else {
-        icon.className = "fa-solid fa-play mr-1.5";
+        const playIcon = "fa-solid fa-play";
+        icon.className = playIcon + " mr-1.5";
+        fsIcon.className = playIcon;
         text.innerText = "继续回放";
+        fsText.innerText = "播放";
     }
 }
 
@@ -331,8 +340,11 @@ function animationLoop(timestamp) {
     if (animProgress >= 1.0) {
         animProgress = 1.0;
         isAnimating = false;
-        document.getElementById("play-icon").className = "fa-solid fa-rotate-right mr-1.5";
+        const resetIcon = "fa-solid fa-rotate-right";
+        document.getElementById("play-icon").className = resetIcon + " mr-1.5";
+        document.getElementById("fs-play-icon").className = resetIcon;
         document.getElementById("play-text").innerText = "再次播放";
+        document.getElementById("fs-play-text").innerText = "重播";
     }
 
     drawPath();

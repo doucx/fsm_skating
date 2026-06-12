@@ -95,6 +95,21 @@
                             <div class="absolute bottom-0 left-0 w-full h-1 bg-slate-800/50 z-20">
                                 <div id="anim-progress-bar" class="h-full bg-sky-500 shadow-[0_0_8px_rgba(56,189,248,0.6)]" style="width: 0%"></div>
                             </div>
+
+                            <!-- 全屏/悬浮控制条 -->
+                            <div id="fullscreen-controls" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                                <div class="bg-slate-900/90 backdrop-blur-xl border border-sky-500/20 rounded-full px-6 py-2.5 flex items-center space-x-6 shadow-2xl pointer-events-auto">
+                                    <button onclick="toggleAnimation()" class="text-sky-400 hover:text-sky-300 transition-colors flex items-center space-x-2">
+                                        <i id="fs-play-icon" class="fa-solid fa-play text-lg"></i>
+                                        <span id="fs-play-text" class="text-xs font-bold uppercase tracking-widest">播放</span>
+                                    </button>
+                                    <div class="h-4 w-[1px] bg-slate-700"></div>
+                                    <button onclick="toggleFullscreen()" class="text-slate-400 hover:text-white transition-colors">
+                                        <i class="fa-solid fa-compress"></i>
+                                    </button>
+                                </div>
+                            </div>
+
                             <canvas id="skate-canvas" width="600" height="200" class="w-full h-[200px] block"></canvas>
                         </div>
                     </div>

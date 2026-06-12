@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(web): 实现轨迹追踪动画与实时动作看板", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781237086.0477624, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(web): 为全屏模式添加底部悬浮播放控制条", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781237195.2699792, "duration_ms": 0}}

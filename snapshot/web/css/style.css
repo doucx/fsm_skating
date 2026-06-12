@@ -38,3 +38,26 @@ body {
     transform: scale(1.05);
     background-color: rgba(56, 189, 248, 0.2);
 }
+
+/* 全屏专用控制条显示策略 */
+#canvas-container:fullscreen #fullscreen-controls {
+    opacity: 0; /* 默认隐藏 */
+    transition: opacity 0.3s ease;
+}
+
+#canvas-container:fullscreen:hover #fullscreen-controls {
+    opacity: 1; /* 鼠标移动时显示 */
+}
+
+/* 轨道进度指示球 */
+#anim-progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #38bdf8;
+}
