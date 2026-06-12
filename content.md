@@ -1,229 +1,356 @@
-这是一个极佳的体验改进。在大屏或全屏（Fullscreen）模式下查看复杂的步法编排时，自由缩放和平移（Zoom & Pan）能够让用户随意探索任何微小的过渡细节或跳跃弧线。
+你的直觉极其精准，这正是问题的根源所在！
 
-我将修改 `web/js/app.js` 来实现这一高级手势：
-1.  **定义全局状态**：在 JS 中引入 `zoomFactor`（缩放系数）、`panX` / `panY`（平移偏移量）以及 `isDragging`（拖拽状态记录器）。
-2.  **融入投影公式**：修改 `drawSkatePath` 内的 2D 变换公式。系统先执行自适应边界计算作为“基准画布”，在此基础上，在全屏模式下融入用户拖拽和滚轮产生的平移量，实现无失真的交互矩阵计算。
-3.  **手势监听初始化**：编写 `initCanvasInteraction()`，绑定鼠标滚轮 `wheel`、点击 `mousedown`、拖拽 `mousemove` 及松开 `mouseup` 组合。
-4.  **状态防松/防抖与重置**：每次进入或退出全屏时，将缩放和平移参数重置为基准值（`1.0` 与 `0`），防止上一轮的手势偏移带入到常规面板中。
+在上一轮全屏视口交互的实现中：
+1. 我们更新了弧线各特征点的中心投影坐标 `transform(p.cx, p.cy)`（它会随着 `zoomFactor` 的改变向四周延展/收缩）。
+2. 但**弧线本身的绘制半径 `scaledR`（`p.R * scale`）、线宽、虚线间距、文本字号以及 ISU 矢量符号的大小却被锁定在了静态的 baseline 比例上**。
 
-## [WIP] feat(web): 冰面轨迹全屏模式支持滚轮无损缩放与鼠标拖拽平移
+这导致当滑冰轨迹由于 Zoom 放大而散开时，弧线的中心点确实向四周发生了扩散，但弧线段半径和尺寸依然停留在常规视口的初始大小，导致原本契合的圆弧连接处断裂、脱靶，且标注文字在视野变大时显得极小、未做同步缩放。
+
+我将生成一个修复计划，为所有的圆弧半径、线宽、虚线尺寸、标量偏置、文字大小和 ISU 矢量路径比例全面挂接动态比例系数（`fFactor`）。
+
+## [WIP] fix(web): 修复 2D 轨迹在缩放时圆弧连接断裂与标注不缩放的 Bug
 
 ### 用户需求
-在 2D 轨迹 Canvas 处于全屏模式时：
-- 支持使用鼠标滚轮无级缩放（Zoom-in / Zoom-out）。
-- 支持点击鼠标左键并按住拖拽，实现轨迹自由移动（Pan）。
+修复在使用鼠标滚轮缩放时，冰面轨迹线连接出现错位、断裂，且标注字体、步法图标未同步进行等比例缩放的问题。
 
 ### 评论
-加入全屏下的无损自由视口探索（Pan & Zoom），让步法校验系统呈现出比肩 CAD 的专业运动学仿真质感，大大提高了编排复杂多步滑跑路径时的可用性。
+这是一个经典且致命的图形学投影缩放同步问题。解决该 Bug 能够让 2D 冰面视图在任意滚轮比例下都保持完美的曲线连续性与清晰度。
 
 ### 目标
-1. 声明并维护 Canvas 状态量（`zoomFactor`、`panX`、`panY`）。
-2. 更新 `drawSkatePath` 内的坐标 `transform` 映射计算。
-3. 增加 `initCanvasInteraction()` 手势初始化函数，注入必要的 `wheel` 及 `drag` 物理坐标转换。
-4. 在全屏状态监听 `fullscreenchange` 中加入状态重置逻辑。
+1. 在 `drawSkatePath` 入口提取动态比例乘法系数 `fFactor`。
+2. 升级 `scaledR`，使其在常规模式下为 `1.0`，在全屏模式下随着 `zoomFactor` 同步拉伸。
+3. 升级 `ctx.lineWidth`、`ctx.shadowBlur` 和虚线分布 `setLineDash`。
+4. 将 `fFactor` 传递至 `drawISUSymbol`，实现莫霍克双足印、转三/括弧尖角曲线在不同缩放下的高保真矢量重构。
+5. 使标注文字的大小（`font`）与垂直偏置量（`offset`）自适应。
 
 ### 基本原理
-1.  **滚轮无损缩放**：拦截滚轮事件 `deltaY`，向上滚则乘以 `1.1` 放大，向下滚则除以 `1.1` 缩小。
-2.  **坐标平移差值**：当 `mousedown` 触发时记录初始偏移，拖拽 `mousemove` 过程中根据 client 差值刷新 `panX/Y`。
-3.  **锚点缩放数学**：为了让缩放最自然，我们将缩放锚点设为**画布中心点**。计算公式为：
-    $$x' = (x_{auto} - x_{center}) \times zoomFactor + x_{center} + panX$$
-    这确保了图形始终环绕屏幕中点向四周流畅膨胀，完全符合直觉。
+我们引入一个自适应系数 `fFactor = document.fullscreenElement ? zoomFactor : 1.0`。
+所有涉及“绝对像素尺寸”的几何变量，在渲染时都必须乘以此系数。
+例如圆弧绘制：
+$$Radius_{draw} = R_{world} \times scale_{auto} \times fFactor$$
+由于中心坐标与半径按相同比例放大，根据极坐标变换，弧段起终点的几何拼合位置将始终严丝合缝、完全闭合。
 
 ### 标签
-#intent/build #flow/ready #priority/high #comp/interfaces #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/visual-gesture #task/action/refactor #task/state/continue
+#intent/fix #flow/ready #priority/high #comp/interfaces #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/visual-scaling-fix #task/action/bug-fix #task/state/continue
 
 ---
 
 ### Script
 
-#### Acts 1: 在页面初始化中注入交互手势注册
+#### Acts 1: 升级 ISU 步法图标制图器以支持无级缩放
 
-修改 `DOMContentLoaded` 入口，在初始化编排状态的同时，挂载 Canvas 的高级手势绑定。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-// 初始化
-document.addEventListener("DOMContentLoaded", () => {
-    initChoreography();
-});
-~~~~~
-~~~~~javascript.new
-// 初始化
-document.addEventListener("DOMContentLoaded", () => {
-    initChoreography();
-    initCanvasInteraction(); // 注入全屏高级手势控制（滚轮缩放与拖拽移动）
-});
-~~~~~
-
-#### Acts 2: 升级坐标投影矩阵，融入交互偏移量
-
-修改 `drawSkatePath` 的投影计算公式，使其在全屏状态下融合滚轮及拖拽所造成的偏移。
+修改 `drawISUSymbol` 声明，增加比例系数参数 `fFactor`，并将所有的圆弧半径、二次曲线控制点、足印椭圆尺寸、阴影扩散与线宽比例化。
 
 ~~~~~act
 patch_file
 web/js/app.js
 ~~~~~
 ~~~~~javascript.old
-    const pad = 35;
-    const w = maxX - minX || 1;
-    const h = maxY - minY || 1;
-    // 自适应缩放比例上限为 1.5 倍，防止少量点时无限放大
-    const scale = Math.min((canvas.width - 2 * pad) / w, (canvas.height - 2 * pad) / h, 1.5);
+// 🎨 ISU 标准专业步法图标渲染器
+function drawISUSymbol(ctx, pt, category) {
+    ctx.save();
+    ctx.strokeStyle = "#ffffff";
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = "rgba(56, 189, 248, 0.8)";
+    ctx.lineWidth = 2;
 
-    // 视口平移补偿
-    const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
-    const offsetY = (canvas.height - h * scale) / 2 - minY * scale;
-
-    // 映射投影函数
-    const transform = (px, py) => ({
-        x: px * scale + offsetX,
-        y: py * scale + offsetY
-    });
-~~~~~
-~~~~~javascript.new
-    const pad = 35;
-    const w = maxX - minX || 1;
-    const h = maxY - minY || 1;
-    // 自适应缩放比例上限为 1.5 倍，防止少量点时无限放大
-    const scale = Math.min((canvas.width - 2 * pad) / w, (canvas.height - 2 * pad) / h, 1.5);
-
-    // 视口平移补偿
-    const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
-    const offsetY = (canvas.height - h * scale) / 2 - minY * scale;
-
-    // 映射投影函数 (全屏状态下融入鼠标手势)
-    const transform = (px, py) => {
-        const ax = px * scale + offsetX;
-        const ay = py * scale + offsetY;
-        
-        if (!document.fullscreenElement) {
-            return { x: ax, y: ay };
-        }
-        
-        // 以画布中点为物理缩放锚点，再加上平移量
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-        return {
-            x: (ax - cx) * zoomFactor + cx + panX,
-            y: (ay - cy) * zoomFactor + cy + panY
-        };
-    };
-~~~~~
-
-#### Acts 3: 注入手势绑定器逻辑，并在全屏状态切换时清空累积参数
-
-实现 `initCanvasInteraction` 手势动作，并在 `fullscreenchange` 中重置手势，避免带回主面板。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-// 5. 全屏切换与动态分辨率适配
-function toggleFullscreen() {
-    const container = document.getElementById("canvas-container");
-    if (!document.fullscreenElement) {
-        container.requestFullscreen().catch((err) => {
-            console.error(`无法进入全屏模式: ${err.message}`);
-        });
-    } else {
-        document.exitFullscreen();
+    if (category === "three_turn") {
+        // 绘制转三步：经典“3”字形尖角 (ξ)
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y - 12, 3, -Math.PI/2, Math.PI/2, false);
+        ctx.lineTo(pt.x - 2, pt.y - 9);
+        ctx.arc(pt.x, pt.y - 6, 3, -Math.PI/2, Math.PI/2, false);
+        ctx.stroke();
+    } else if (category === "bracket") {
+        // 绘制括弧步：经典的向外括弧尖角 ({)
+        ctx.beginPath();
+        ctx.moveTo(pt.x + 3, pt.y - 15);
+        ctx.quadraticCurveTo(pt.x - 1, pt.y - 15, pt.x - 1, pt.y - 11);
+        ctx.lineTo(pt.x - 1, pt.y - 10);
+        ctx.quadraticCurveTo(pt.x - 4, pt.y - 9, pt.x - 1, pt.y - 8);
+        ctx.lineTo(pt.x - 1, pt.y - 7);
+        ctx.quadraticCurveTo(pt.x - 1, pt.y - 3, pt.x + 3, pt.y - 3);
+        ctx.stroke();
+    } else if (category === "mohawk") {
+        // 绘制莫霍克步：交叉双脚足迹 (Double Footprints)
+        ctx.strokeStyle = "#fb923c"; 
+        ctx.shadowColor = "rgba(249, 115, 22, 0.8)";
+        // 左滑跑足迹线
+        ctx.beginPath();
+        ctx.ellipse(pt.x - 3, pt.y - 9, 1.8, 3.8, Math.PI / 6, 0, 2 * Math.PI);
+        ctx.stroke();
+        // 右滑跑足迹线
+        ctx.beginPath();
+        ctx.ellipse(pt.x + 3, pt.y - 9, 1.8, 3.8, -Math.PI / 6, 0, 2 * Math.PI);
+        ctx.stroke();
     }
+    ctx.restore();
 }
-
-document.addEventListener("fullscreenchange", () => {
-    const canvas = document.getElementById("skate-canvas");
-    if (document.fullscreenElement) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    } else {
-        canvas.width = 600;
-        canvas.height = 200;
-    }
-    drawSkatePath(path);
-});
 ~~~~~
 ~~~~~javascript.new
-// 5. 全屏切换与动态分辨率适配
-let zoomFactor = 1.0;
-let panX = 0;
-let panY = 0;
-let isDragging = false;
-let startX = 0;
-let startY = 0;
+// 🎨 ISU 标准专业步法图标渲染器
+function drawISUSymbol(ctx, pt, category, fFactor = 1.0) {
+    ctx.save();
+    ctx.strokeStyle = "#ffffff";
+    ctx.shadowBlur = 8 * fFactor;
+    ctx.shadowColor = "rgba(56, 189, 248, 0.8)";
+    ctx.lineWidth = 2 * fFactor;
 
-function toggleFullscreen() {
-    const container = document.getElementById("canvas-container");
-    if (!document.fullscreenElement) {
-        container.requestFullscreen().catch((err) => {
-            console.error(`无法进入全屏模式: ${err.message}`);
-        });
-    } else {
-        document.exitFullscreen();
+    if (category === "three_turn") {
+        // 绘制转三步：经典“3”字形尖角 (ξ)
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y - 12 * fFactor, 3 * fFactor, -Math.PI/2, Math.PI/2, false);
+        ctx.lineTo(pt.x - 2 * fFactor, pt.y - 9 * fFactor);
+        ctx.arc(pt.x, pt.y - 6 * fFactor, 3 * fFactor, -Math.PI/2, Math.PI/2, false);
+        ctx.stroke();
+    } else if (category === "bracket") {
+        // 绘制括弧步：经典的向外括弧尖角 ({)
+        ctx.beginPath();
+        ctx.moveTo(pt.x + 3 * fFactor, pt.y - 15 * fFactor);
+        ctx.quadraticCurveTo(pt.x - 1 * fFactor, pt.y - 15 * fFactor, pt.x - 1 * fFactor, pt.y - 11 * fFactor);
+        ctx.lineTo(pt.x - 1 * fFactor, pt.y - 10 * fFactor);
+        ctx.quadraticCurveTo(pt.x - 4 * fFactor, pt.y - 9 * fFactor, pt.x - 1 * fFactor, pt.y - 8 * fFactor);
+        ctx.lineTo(pt.x - 1 * fFactor, pt.y - 7 * fFactor);
+        ctx.quadraticCurveTo(pt.x - 1 * fFactor, pt.y - 3 * fFactor, pt.x + 3 * fFactor, pt.y - 3 * fFactor);
+        ctx.stroke();
+    } else if (category === "mohawk") {
+        // 绘制莫霍克步：交叉双脚足迹 (Double Footprints)
+        ctx.strokeStyle = "#fb923c"; 
+        ctx.shadowColor = "rgba(249, 115, 22, 0.8)";
+        // 左滑跑足迹线
+        ctx.beginPath();
+        ctx.ellipse(pt.x - 3 * fFactor, pt.y - 9 * fFactor, 1.8 * fFactor, 3.8 * fFactor, Math.PI / 6, 0, 2 * Math.PI);
+        ctx.stroke();
+        // 右滑跑足迹线
+        ctx.beginPath();
+        ctx.ellipse(pt.x + 3 * fFactor, pt.y - 9 * fFactor, 1.8 * fFactor, 3.8 * fFactor, -Math.PI / 6, 0, 2 * Math.PI);
+        ctx.stroke();
     }
+    ctx.restore();
 }
+~~~~~
 
-// 注册拖拽与滚动交互机制 (仅在全屏状态生效)
-function initCanvasInteraction() {
-    const canvas = document.getElementById("skate-canvas");
-    if (!canvas) return;
+#### Acts 2: 动态比例化弧线半径、线宽、虚线步距、字体大小与箭头坐标
 
-    canvas.addEventListener("wheel", (e) => {
-        if (!document.fullscreenElement) return;
-        e.preventDefault(); // 阻止页面滚动
+修改 `drawSkatePath` 里的弧线重绘循环。引入 `fFactor` 并让它全面控制半径 `scaledR`、线宽、虚线及箭头。
 
-        const zoomSpeed = 0.08;
-        if (e.deltaY < 0) {
-            zoomFactor *= (1 + zoomSpeed);
+~~~~~act
+patch_file
+web/js/app.js
+~~~~~
+~~~~~javascript.old
+    // 4. 渲染荧光划痕弧线
+    for (let i = 1; i < points.length; i++) {
+        const p = points[i];
+        const centerTrans = transform(p.cx, p.cy);
+        const scaledR = p.R * scale;
+
+        ctx.beginPath();
+        ctx.arc(centerTrans.x, centerTrans.y, scaledR, p.startAngle, p.endAngle, p.anticlockwise);
+        
+        const progressRatio = i / points.length;
+        const startStateStr = points[i-1].state;
+        const isLeft = startStateStr[0] === 'L';
+        const isForward = startStateStr[1] === 'F';
+
+        // 左右脚区分：左脚蓝色，右脚橙色
+        const baseColor = isLeft ? "56, 189, 248" : "249, 115, 22";
+        ctx.strokeStyle = `rgba(${baseColor}, ${0.5 + progressRatio * 0.5})`;
+        ctx.shadowColor = `rgba(${baseColor}, 0.65)`;
+        ctx.lineWidth = 3.5;
+        ctx.shadowBlur = 12;
+
+        // 前后向区分：前滑实线，后滑虚线 (ISU标准)
+        if (isForward) {
+            ctx.setLineDash([]);
         } else {
-            zoomFactor /= (1 + zoomSpeed);
-            zoomFactor = Math.max(0.15, zoomFactor); // 设定最小收缩边界
+            ctx.setLineDash([6, 4]);
         }
-        drawSkatePath(path);
-    }, { passive: false });
 
-    canvas.addEventListener("mousedown", (e) => {
-        if (!document.fullscreenElement) return;
-        isDragging = true;
-        startX = e.clientX - panX;
-        startY = e.clientY - panY;
-    });
+        ctx.stroke();
+        ctx.shadowBlur = 0; // 重置发光防止污染文字
+        ctx.setLineDash([]); // 立即恢复实线
 
-    canvas.addEventListener("mousemove", (e) => {
-        if (!document.fullscreenElement || !isDragging) return;
-        panX = e.clientX - startX;
-        panY = e.clientY - startY;
-        drawSkatePath(path);
-    });
+        // 绘制动作简写于弧线黄金中点 (Mid-angle)
+        if (p.move) {
+            const midAngle = p.startAngle + (p.endAngle - p.startAngle) * 0.5;
+            const mx = centerTrans.x + scaledR * Math.cos(midAngle);
+            const my = centerTrans.y + scaledR * Math.sin(midAngle);
+            ctx.fillStyle = "rgba(148, 163, 184, 0.85)";
+            ctx.font = "9px sans-serif";
+            ctx.textAlign = "center";
+            // 只截取中文名称第一部分
+            const miniName = p.move.name.split(" ")[0].substring(0, 4);
+            ctx.fillText(miniName, mx, my - 5);
 
-    window.addEventListener("mouseup", () => {
-        isDragging = false;
+            // 绘制滑跑方向切线箭头（同步双脚颜色）
+            const worldMx = p.cx + p.R * Math.cos(midAngle);
+            const worldMy = p.cy + p.R * Math.sin(midAngle);
+            const pMid = transform(worldMx, worldMy);
+
+            const midK = p.anticlockwise ? -1 : 1;
+            const arrowAngle = Math.atan2(midK * Math.cos(midAngle), -midK * Math.sin(midAngle));
+
+            const arrowLength = 9;
+            const arrowWidth = 5;
+            const backX = pMid.x - arrowLength * Math.cos(arrowAngle);
+            const backY = pMid.y - arrowLength * Math.sin(arrowAngle);
+            
+            const leftX = backX + arrowWidth * Math.cos(arrowAngle + Math.PI / 2);
+            const leftY = backY + arrowWidth * Math.sin(arrowAngle + Math.PI / 2);
+            const rightX = backX + arrowWidth * Math.cos(arrowAngle - Math.PI / 2);
+            const rightY = backY + arrowWidth * Math.sin(arrowAngle - Math.PI / 2);
+
+            ctx.beginPath();
+            ctx.moveTo(pMid.x, pMid.y);
+            ctx.lineTo(leftX, leftY);
+            ctx.lineTo(rightX, rightY);
+            ctx.closePath();
+            ctx.fillStyle = isLeft ? "rgba(56, 189, 248, 0.85)" : "rgba(249, 115, 22, 0.85)";
+            ctx.fill();
+        }
+    }
+~~~~~
+~~~~~javascript.new
+    // 4. 渲染荧光划痕弧线
+    const fFactor = document.fullscreenElement ? zoomFactor : 1.0;
+
+    for (let i = 1; i < points.length; i++) {
+        const p = points[i];
+        const centerTrans = transform(p.cx, p.cy);
+        const scaledR = p.R * scale * fFactor; // 圆弧绘制半径完美关联缩放比例
+
+        ctx.beginPath();
+        ctx.arc(centerTrans.x, centerTrans.y, scaledR, p.startAngle, p.endAngle, p.anticlockwise);
+        
+        const progressRatio = i / points.length;
+        const startStateStr = points[i-1].state;
+        const isLeft = startStateStr[0] === 'L';
+        const isForward = startStateStr[1] === 'F';
+
+        // 左右脚区分：左脚蓝色，右脚橙色
+        const baseColor = isLeft ? "56, 189, 248" : "249, 115, 22";
+        ctx.strokeStyle = `rgba(${baseColor}, ${0.5 + progressRatio * 0.5})`;
+        ctx.shadowColor = `rgba(${baseColor}, 0.65)`;
+        ctx.lineWidth = 3.5 * fFactor; // 物理线粗细关联缩放
+        ctx.shadowBlur = 12 * fFactor; // 荧光晕开半径关联缩放
+
+        // 前后向区分：前滑实线，后滑虚线 (ISU标准)
+        if (isForward) {
+            ctx.setLineDash([]);
+        } else {
+            ctx.setLineDash([6 * fFactor, 4 * fFactor]); // 虚线分段尺寸关联缩放
+        }
+
+        ctx.stroke();
+        ctx.shadowBlur = 0; // 重置发光防止污染文字
+        ctx.setLineDash([]); // 立即恢复实线
+
+        // 绘制动作简写于弧线黄金中点 (Mid-angle)
+        if (p.move) {
+            const midAngle = p.startAngle + (p.endAngle - p.startAngle) * 0.5;
+            const mx = centerTrans.x + scaledR * Math.cos(midAngle);
+            const my = centerTrans.y + scaledR * Math.sin(midAngle);
+            ctx.fillStyle = "rgba(148, 163, 184, 0.85)";
+            ctx.font = `${Math.round(9 * fFactor)}px sans-serif`; // 字体大小随缩放变化
+            ctx.textAlign = "center";
+            // 只截取中文名称第一部分
+            const miniName = p.move.name.split(" ")[0].substring(0, 4);
+            ctx.fillText(miniName, mx, my - 5 * fFactor); // 垂直距离自适应偏置
+
+            // 绘制滑跑方向切线箭头（同步双脚颜色与缩放）
+            const worldMx = p.cx + p.R * Math.cos(midAngle);
+            const worldMy = p.cy + p.R * Math.sin(midAngle);
+            const pMid = transform(worldMx, worldMy);
+
+            const midK = p.anticlockwise ? -1 : 1;
+            const arrowAngle = Math.atan2(midK * Math.cos(midAngle), -midK * Math.sin(midAngle));
+
+            const arrowLength = 9 * fFactor; // 箭头尺寸自适应缩放
+            const arrowWidth = 5 * fFactor;
+            const backX = pMid.x - arrowLength * Math.cos(arrowAngle);
+            const backY = pMid.y - arrowLength * Math.sin(arrowAngle);
+            
+            const leftX = backX + arrowWidth * Math.cos(arrowAngle + Math.PI / 2);
+            const leftY = backY + arrowWidth * Math.sin(arrowAngle + Math.PI / 2);
+            const rightX = backX + arrowWidth * Math.cos(arrowAngle - Math.PI / 2);
+            const rightY = backY + arrowWidth * Math.sin(arrowAngle - Math.PI / 2);
+
+            ctx.beginPath();
+            ctx.moveTo(pMid.x, pMid.y);
+            ctx.lineTo(leftX, leftY);
+            ctx.lineTo(rightX, rightY);
+            ctx.closePath();
+            ctx.fillStyle = isLeft ? "rgba(56, 189, 248, 0.85)" : "rgba(249, 115, 22, 0.85)";
+            ctx.fill();
+        }
+    }
+~~~~~
+
+#### Acts 3: 动态比例化标志球球体半径、描边粗细与节点文本
+
+修改 `drawSkatePath` 末尾的边缘标志节点循环，使得 LFO 等状态球及标注字号也随着缩放进行动态适配，并向 `drawISUSymbol` 传入动态因子。
+
+~~~~~act
+patch_file
+web/js/app.js
+~~~~~
+~~~~~javascript.old
+    // 5. 渲染边缘节点状态标志球与发光层
+    points.forEach((p, idx) => {
+        const pt = transform(p.x, p.y);
+        const isLast = (idx === points.length - 1);
+
+        // 如果是特殊转体/步法，在转体点绘制 ISU 标准符号
+        if (p.move && ["three_turn", "bracket", "mohawk"].includes(p.move.category)) {
+            drawISUSymbol(ctx, pt, p.move.category);
+        } else {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, isLast ? 6 : 4, 0, 2 * Math.PI);
+            ctx.fillStyle = isLast ? "#38bdf8" : "#0f172a";
+            ctx.strokeStyle = isLast ? "#ffffff" : "#0284c7";
+            ctx.lineWidth = isLast ? 2.5 : 2;
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // 绘制高亮文字
+        ctx.fillStyle = isLast ? "#ffffff" : "#94a3b8";
+        ctx.font = isLast ? "bold 11px monospace" : "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(p.state, pt.x, pt.y - (isLast ? 11 : 9));
     });
 }
+~~~~~
+~~~~~javascript.new
+    // 5. 渲染边缘节点状态标志球与发光层
+    points.forEach((p, idx) => {
+        const pt = transform(p.x, p.y);
+        const isLast = (idx === points.length - 1);
 
-document.addEventListener("fullscreenchange", () => {
-    const canvas = document.getElementById("skate-canvas");
-    
-    // 状态切换时彻底初始化拖拽平移参数，保障画面对齐
-    zoomFactor = 1.0;
-    panX = 0;
-    panY = 0;
-    isDragging = false;
+        // 如果是特殊转体/步法，在转体点绘制 ISU 标准符号（传入比例系数参数）
+        if (p.move && ["three_turn", "bracket", "mohawk"].includes(p.move.category)) {
+            drawISUSymbol(ctx, pt, p.move.category, fFactor);
+        } else {
+            ctx.beginPath();
+            const markerR = (isLast ? 6 : 4) * fFactor; // 标志球半径关联缩放
+            ctx.arc(pt.x, pt.y, markerR, 0, 2 * Math.PI);
+            ctx.fillStyle = isLast ? "#38bdf8" : "#0f172a";
+            ctx.strokeStyle = isLast ? "#ffffff" : "#0284c7";
+            ctx.lineWidth = (isLast ? 2.5 : 2) * fFactor; // 描边粗细关联缩放
+            ctx.fill();
+            ctx.stroke();
+        }
 
-    if (document.fullscreenElement) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    } else {
-        canvas.width = 600;
-        canvas.height = 200;
-    }
-    drawSkatePath(path);
-});
+        // 绘制高亮文字
+        ctx.fillStyle = isLast ? "#ffffff" : "#94a3b8";
+        ctx.font = isLast ? `bold ${Math.round(11 * fFactor)}px monospace` : `${Math.round(10 * fFactor)}px monospace`; // 字体大小关联缩放
+        ctx.textAlign = "center";
+        ctx.fillText(p.state, pt.x, pt.y - (isLast ? 11 : 9) * fFactor); // 偏置距离自适应缩放
+    });
+}
 ~~~~~
 
 ### 下一步建议
-- **触摸支持（移动端优化建议）**：如果是平板等触摸设备，鼠标拖动可以完美映射为单指触控。未来如需更精细，可以补充多点触控（Pinch to zoom）双指缩放公式。
-- **重置视口按钮**：在全屏状态下，如果用户拖拽至丢失视野（Pan 得太远），可以考虑在全屏一角提供一个“重置视口”的悬浮按钮。
+- **运行并多层级缩放体验**：在浏览器中打开 FSM 冰面系统，双击或点击全屏按钮，然后尝试快速、慢速滑动鼠标滚轮，验证圆弧连接曲线、莫霍克交叉足迹在任意放大倍数下是否均天衣无缝、绝对贴合。
+- **Git 暂存与归档建议**：在多轮手动视觉与交互方案修改之后，如果全部核心功能均验证成功，可以在终端准备提交记录以结束该功能点的开发。

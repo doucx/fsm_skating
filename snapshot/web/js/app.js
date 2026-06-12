@@ -129,29 +129,29 @@ function undoMove() {
 }
 
 // 🎨 ISU 标准专业步法图标渲染器
-function drawISUSymbol(ctx, pt, category) {
+function drawISUSymbol(ctx, pt, category, fFactor = 1.0) {
     ctx.save();
     ctx.strokeStyle = "#ffffff";
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 8 * fFactor;
     ctx.shadowColor = "rgba(56, 189, 248, 0.8)";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * fFactor;
 
     if (category === "three_turn") {
         // 绘制转三步：经典“3”字形尖角 (ξ)
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y - 12, 3, -Math.PI/2, Math.PI/2, false);
-        ctx.lineTo(pt.x - 2, pt.y - 9);
-        ctx.arc(pt.x, pt.y - 6, 3, -Math.PI/2, Math.PI/2, false);
+        ctx.arc(pt.x, pt.y - 12 * fFactor, 3 * fFactor, -Math.PI/2, Math.PI/2, false);
+        ctx.lineTo(pt.x - 2 * fFactor, pt.y - 9 * fFactor);
+        ctx.arc(pt.x, pt.y - 6 * fFactor, 3 * fFactor, -Math.PI/2, Math.PI/2, false);
         ctx.stroke();
     } else if (category === "bracket") {
         // 绘制括弧步：经典的向外括弧尖角 ({)
         ctx.beginPath();
-        ctx.moveTo(pt.x + 3, pt.y - 15);
-        ctx.quadraticCurveTo(pt.x - 1, pt.y - 15, pt.x - 1, pt.y - 11);
-        ctx.lineTo(pt.x - 1, pt.y - 10);
-        ctx.quadraticCurveTo(pt.x - 4, pt.y - 9, pt.x - 1, pt.y - 8);
-        ctx.lineTo(pt.x - 1, pt.y - 7);
-        ctx.quadraticCurveTo(pt.x - 1, pt.y - 3, pt.x + 3, pt.y - 3);
+        ctx.moveTo(pt.x + 3 * fFactor, pt.y - 15 * fFactor);
+        ctx.quadraticCurveTo(pt.x - 1 * fFactor, pt.y - 15 * fFactor, pt.x - 1 * fFactor, pt.y - 11 * fFactor);
+        ctx.lineTo(pt.x - 1 * fFactor, pt.y - 10 * fFactor);
+        ctx.quadraticCurveTo(pt.x - 4 * fFactor, pt.y - 9 * fFactor, pt.x - 1 * fFactor, pt.y - 8 * fFactor);
+        ctx.lineTo(pt.x - 1 * fFactor, pt.y - 7 * fFactor);
+        ctx.quadraticCurveTo(pt.x - 1 * fFactor, pt.y - 3 * fFactor, pt.x + 3 * fFactor, pt.y - 3 * fFactor);
         ctx.stroke();
     } else if (category === "mohawk") {
         // 绘制莫霍克步：交叉双脚足迹 (Double Footprints)
@@ -159,11 +159,11 @@ function drawISUSymbol(ctx, pt, category) {
         ctx.shadowColor = "rgba(249, 115, 22, 0.8)";
         // 左滑跑足迹线
         ctx.beginPath();
-        ctx.ellipse(pt.x - 3, pt.y - 9, 1.8, 3.8, Math.PI / 6, 0, 2 * Math.PI);
+        ctx.ellipse(pt.x - 3 * fFactor, pt.y - 9 * fFactor, 1.8 * fFactor, 3.8 * fFactor, Math.PI / 6, 0, 2 * Math.PI);
         ctx.stroke();
         // 右滑跑足迹线
         ctx.beginPath();
-        ctx.ellipse(pt.x + 3, pt.y - 9, 1.8, 3.8, -Math.PI / 6, 0, 2 * Math.PI);
+        ctx.ellipse(pt.x + 3 * fFactor, pt.y - 9 * fFactor, 1.8 * fFactor, 3.8 * fFactor, -Math.PI / 6, 0, 2 * Math.PI);
         ctx.stroke();
     }
     ctx.restore();
@@ -284,10 +284,12 @@ function drawSkatePath(pathData) {
     }
 
     // 4. 渲染荧光划痕弧线
+    const fFactor = document.fullscreenElement ? zoomFactor : 1.0;
+
     for (let i = 1; i < points.length; i++) {
         const p = points[i];
         const centerTrans = transform(p.cx, p.cy);
-        const scaledR = p.R * scale;
+        const scaledR = p.R * scale * fFactor; // 圆弧绘制半径完美关联缩放比例
 
         ctx.beginPath();
         ctx.arc(centerTrans.x, centerTrans.y, scaledR, p.startAngle, p.endAngle, p.anticlockwise);
@@ -301,14 +303,14 @@ function drawSkatePath(pathData) {
         const baseColor = isLeft ? "56, 189, 248" : "249, 115, 22";
         ctx.strokeStyle = `rgba(${baseColor}, ${0.5 + progressRatio * 0.5})`;
         ctx.shadowColor = `rgba(${baseColor}, 0.65)`;
-        ctx.lineWidth = 3.5;
-        ctx.shadowBlur = 12;
+        ctx.lineWidth = 3.5 * fFactor; // 物理线粗细关联缩放
+        ctx.shadowBlur = 12 * fFactor; // 荧光晕开半径关联缩放
 
         // 前后向区分：前滑实线，后滑虚线 (ISU标准)
         if (isForward) {
             ctx.setLineDash([]);
         } else {
-            ctx.setLineDash([6, 4]);
+            ctx.setLineDash([6 * fFactor, 4 * fFactor]); // 虚线分段尺寸关联缩放
         }
 
         ctx.stroke();
@@ -321,13 +323,13 @@ function drawSkatePath(pathData) {
             const mx = centerTrans.x + scaledR * Math.cos(midAngle);
             const my = centerTrans.y + scaledR * Math.sin(midAngle);
             ctx.fillStyle = "rgba(148, 163, 184, 0.85)";
-            ctx.font = "9px sans-serif";
+            ctx.font = `${Math.round(9 * fFactor)}px sans-serif`; // 字体大小随缩放变化
             ctx.textAlign = "center";
             // 只截取中文名称第一部分
             const miniName = p.move.name.split(" ")[0].substring(0, 4);
-            ctx.fillText(miniName, mx, my - 5);
+            ctx.fillText(miniName, mx, my - 5 * fFactor); // 垂直距离自适应偏置
 
-            // 绘制滑跑方向切线箭头（同步双脚颜色）
+            // 绘制滑跑方向切线箭头（同步双脚颜色与缩放）
             const worldMx = p.cx + p.R * Math.cos(midAngle);
             const worldMy = p.cy + p.R * Math.sin(midAngle);
             const pMid = transform(worldMx, worldMy);
@@ -335,8 +337,8 @@ function drawSkatePath(pathData) {
             const midK = p.anticlockwise ? -1 : 1;
             const arrowAngle = Math.atan2(midK * Math.cos(midAngle), -midK * Math.sin(midAngle));
 
-            const arrowLength = 9;
-            const arrowWidth = 5;
+            const arrowLength = 9 * fFactor; // 箭头尺寸自适应缩放
+            const arrowWidth = 5 * fFactor;
             const backX = pMid.x - arrowLength * Math.cos(arrowAngle);
             const backY = pMid.y - arrowLength * Math.sin(arrowAngle);
             
@@ -360,24 +362,25 @@ function drawSkatePath(pathData) {
         const pt = transform(p.x, p.y);
         const isLast = (idx === points.length - 1);
 
-        // 如果是特殊转体/步法，在转体点绘制 ISU 标准符号
+        // 如果是特殊转体/步法，在转体点绘制 ISU 标准符号（传入比例系数参数）
         if (p.move && ["three_turn", "bracket", "mohawk"].includes(p.move.category)) {
-            drawISUSymbol(ctx, pt, p.move.category);
+            drawISUSymbol(ctx, pt, p.move.category, fFactor);
         } else {
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, isLast ? 6 : 4, 0, 2 * Math.PI);
+            const markerR = (isLast ? 6 : 4) * fFactor; // 标志球半径关联缩放
+            ctx.arc(pt.x, pt.y, markerR, 0, 2 * Math.PI);
             ctx.fillStyle = isLast ? "#38bdf8" : "#0f172a";
             ctx.strokeStyle = isLast ? "#ffffff" : "#0284c7";
-            ctx.lineWidth = isLast ? 2.5 : 2;
+            ctx.lineWidth = (isLast ? 2.5 : 2) * fFactor; // 描边粗细关联缩放
             ctx.fill();
             ctx.stroke();
         }
 
         // 绘制高亮文字
         ctx.fillStyle = isLast ? "#ffffff" : "#94a3b8";
-        ctx.font = isLast ? "bold 11px monospace" : "10px monospace";
+        ctx.font = isLast ? `bold ${Math.round(11 * fFactor)}px monospace` : `${Math.round(10 * fFactor)}px monospace`; // 字体大小关联缩放
         ctx.textAlign = "center";
-        ctx.fillText(p.state, pt.x, pt.y - (isLast ? 11 : 9));
+        ctx.fillText(p.state, pt.x, pt.y - (isLast ? 11 : 9) * fFactor); // 偏置距离自适应缩放
     });
 }
 
