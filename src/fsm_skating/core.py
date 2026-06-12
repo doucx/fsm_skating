@@ -1,21 +1,29 @@
 from typing import Dict
 
+
 class State:
     """
     表示花样滑冰中的一个滑行瞬间状态。
     State = (Foot, Direction, Edge)
     """
+
     def __init__(self, foot: str, direction: str, edge: str):
         foot = foot.upper()
         direction = direction.upper()
         edge = edge.upper()
 
         if foot not in ("L", "R"):
-            raise ValueError(f"Invalid Foot (脚): '{foot}'. Must be 'L' (左脚) or 'R' (右脚).")
+            raise ValueError(
+                f"Invalid Foot (脚): '{foot}'. Must be 'L' (左脚) or 'R' (右脚)."
+            )
         if direction not in ("F", "B"):
-            raise ValueError(f"Invalid Direction (方向): '{direction}'. Must be 'F' (前向) or 'B' (后向).")
+            raise ValueError(
+                f"Invalid Direction (方向): '{direction}'. Must be 'F' (前向) or 'B' (后向)."
+            )
         if edge not in ("O", "I"):
-            raise ValueError(f"Invalid Edge (用刃): '{edge}'. Must be 'O' (外刃) or 'I' (内刃).")
+            raise ValueError(
+                f"Invalid Edge (用刃): '{edge}'. Must be 'O' (外刃) or 'I' (内刃)."
+            )
 
         self.foot = foot
         self.direction = direction
@@ -28,7 +36,9 @@ class State:
         """
         s = s.strip().upper()
         if len(s) != 3:
-            raise ValueError(f"Invalid state format: '{s}'. Must be 3 characters, e.g., 'LFO'.")
+            raise ValueError(
+                f"Invalid state format: '{s}'. Must be 3 characters, e.g., 'LFO'."
+            )
         return cls(s[0], s[1], s[2])
 
     def __str__(self) -> str:
@@ -40,9 +50,11 @@ class State:
     def __eq__(self, other) -> bool:
         if not isinstance(other, State):
             return False
-        return (self.foot == other.foot and 
-                self.direction == other.direction and 
-                self.edge == other.edge)
+        return (
+            self.foot == other.foot
+            and self.direction == other.direction
+            and self.edge == other.edge
+        )
 
     def __hash__(self) -> int:
         return hash((self.foot, self.direction, self.edge))

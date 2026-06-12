@@ -1,12 +1,14 @@
 import pytest
 from fsm_skating.core import State, get_relative_conditions
 
+
 def test_state_creation():
     s = State("L", "F", "O")
     assert str(s) == "LFO"
     assert s.foot == "L"
     assert s.direction == "F"
     assert s.edge == "O"
+
 
 def test_state_invalid_creation():
     with pytest.raises(ValueError, match="Invalid Foot"):
@@ -15,6 +17,7 @@ def test_state_invalid_creation():
         State("L", "U", "O")
     with pytest.raises(ValueError, match="Invalid state format"):
         State.from_string("LF")
+
 
 def test_relative_conditions():
     s1 = State.from_string("LFO")
