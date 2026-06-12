@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 在 FastAPI 路由层中新增动作驱动校验接口 (/api/verify/moves)", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781234095.0723348, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat: 实现动作驱动校验逻辑与物理状态演算器", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781234264.4582882, "duration_ms": 0}}
