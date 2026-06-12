@@ -13,6 +13,7 @@ export function getCurvature(stateStr) {
 
 /**
  * 核心几何变换：把 path 路径转换为可独立渲染的物理数据
+ * L 个状态将对应 L 个 Arc 与 L+1 个 Node
  */
 export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
     if (!pathData || pathData.length === 0) return { nodes: [], arcs: [] };
@@ -32,9 +33,9 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
         state: pathData[0].state
     });
 
-    for (let i = 0; i < pathData.length - 1; i++) {
+    // 遍历所有滑行状态，生成 L 个 Arc
+    for (let i = 0; i < pathData.length; i++) {
         const step = pathData[i];
-        const nextStep = pathData[i + 1];
         const stateStr = step.state;
 
         const curve = getCurvature(stateStr);
@@ -51,7 +52,7 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
         const nextY = cy + R * Math.sin(endAngle);
         const nextTheta = theta + sweep;
 
-        // Arc i: 从当前点滑行到下一个动作点，代表用刃状态 State i
+        // Arc i: 代表当前滑行状态 stateStr 对应的滑行轨迹线
         arcs.push({
             startX: x,
             startY: y,
@@ -71,13 +72,16 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
         y = nextY;
         theta = nextTheta;
 
-        // Node i+1: 代表在滑行 Arc i 结束处发生的步法动作 Move i
+        // Node i+1: 
+        // 1. 如果是最后一个状态，则该节点为滑行终点(END)
+        // 2. 否则该节点对应 step.move (动作步法)
+        const isLast = (i === pathData.length - 1);
         nodes.push({
             x,
             y,
-            label: step.move ? step.move.name : "",
-            category: step.move ? step.move.category : "point",
-            state: nextStep.state,
+            label: isLast ? "END" : (step.move ? step.move.name : ""),
+            category: isLast ? "end" : (step.move ? step.move.category : "point"),
+            state: isLast ? "" : (pathData[i+1] ? pathData[i+1].state : ""),
             move: step.move
         });
     }

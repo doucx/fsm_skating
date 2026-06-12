@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] refactor: 拆分前端 app.js 为 ES6 模块并重构轨迹渲染模型", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781232821.2684453, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] fix: 修复初始轨迹缺失、重置不生效及起始刃切换不更新画布的缺陷", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781233031.4095066, "duration_ms": 0}}

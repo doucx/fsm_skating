@@ -28,9 +28,11 @@ function initChoreography() {
     ui.updateCurrStateUI(startState);
     fetchNextTransitions();
     ui.updateStats(path, undoMove);
+    drawPath(); // 保证起始滑跑状态建立时，第一段滑行弧线就被立即绘制出来
 }
 
 function resetChoreography() {
+    renderer.resetViewport(); // 清除全屏下的 Zoom 和 Pan 缩放平移矩阵
     initChoreography();
 }
 
