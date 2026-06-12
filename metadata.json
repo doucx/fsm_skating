@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "ruff Capture: M main.py", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781228972.8345344, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat: 引入 HTML5 Canvas 实现冰面滑痕轨迹 2D 实时渲染", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781229182.3623352, "duration_ms": 0}}
