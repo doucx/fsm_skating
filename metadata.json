@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 引入 HTML5 Canvas 实现冰面滑痕轨迹 2D 实时渲染", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781229182.3623352, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat(ui): implement real-time 2D canvas trajectory rendering", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781229429.6026857, "duration_ms": 0}}
