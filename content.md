@@ -1,95 +1,58 @@
-这是一个非常棒的视觉改进！当前的灰色小箭头在冰面上显得过于沉闷，暗淡了步法转移的丰富程度。
+好的，我们已经圆满完成了这一阶段的“播放器化”交互功能开发。现在的沙盒已经具备了动态模拟、物理时间轴、精细化状态面板以及完整的快捷键支持，从一个静态编排工具进化为了一个动态分析模拟器。
 
-将转移节点改造成**“橙色微光指示灯（LED Indicator）”**样式，不仅建立起了明晰的“天蓝用刃状态 ➜ 橙黄变刃动作”的对比视觉结构，更能让整条冰面流向像高精密电子原理图一样，闪烁出动感。
+我将生成一个 `[COMMIT]` 计划，将这些前端 UI 与交互引擎的重大更新打包提交。
 
-我将为你修改 `uiController.js` 中的轨道渲染逻辑，将其升级为带有微光扩散投影的 LED 舱室卡片。
-
-### [WIP] style(web): 将已规划轨迹流向动作节点升级为橙色微光指示灯
+## [COMMIT] feat(web): 实现轨迹动态模拟、语义化时间轴与交互控制引擎
 
 ### 用户需求
-将轨迹流向中的灰色箭头和步法名称更换为橙色动作节点。节点应包含简称和难度级别，并带有柔和的橙色发光扩散投影，像指示灯一样亮眼。
+将近期完成的轨迹追踪小球、动画播放/暂停控制、倍速切换、物理进度条、实时 HUD 看板以及相关的 UI 样式更新提交到版本库。
 
 ### 评论
-这样调整后，动作节点（物理转移）与状态片段（圆弧滑跑）在色彩体系上形成了经典的“双色中控台”结构。这也极大增加了“设计难度积分”的视觉存在感。
+这是一次显著提升用户体验 (UX) 的重构。通过引入时间维度的模拟，用户不仅能看到静态轨迹，还能感知滑行的节奏和步法转体的瞬间，极大地增强了工具在教学与分析场景下的价值。
 
 ### 目标
-1.  重构 `uiController.js` 中的 `updateStats` 方法，不再绘制灰色文本，而是创建富有质感的橙色 LED 元素。
-2.  在动作节点两侧增加细微的过渡箭头（Chev），保证拓扑图的单向可读性。
+1.  将 Web 前端的所有变更（CSS, HTML, JS）添加到暂存区。
+2.  创建一个详尽的 Git 提交，记录功能的演进。
+
+### 基本原理
+按照 Quipu 协议要求，在确认功能开发阶段完成后，通过独立的提交计划将文件系统变更持久化到 Git 历史中。
 
 ### 标签
-#intent/tune #flow/ready #priority/medium #comp/docs #concept/ui #scope/ux #ai/instruct #task/domain/ui #task/object/visual-trail #task/action/style-tune #task/state/continue
+#intent/build #flow/ready #priority/high #comp/web #concept/ui #concept/executor #scope/ux #ai/instruct #task/domain/ui #task/object/animation-tracker #task/action/implementation #task/state/end #task/status/completed
 
 ---
 
 ### Script
 
-#### Acts 1: 重构动作节点的渲染逻辑
-升级为橙色高亮微光微缩卡片，并配以极简的衔接剪头。
+#### Acts 1: 提交 Web 前端交互增强功能
+
+我们将把所有涉及动画、样式、HUD 和交互逻辑的文件统一提交。
 
 ~~~~~act
-patch_file
+git_add
+web/index.html
+web/css/style.css
+web/js/app.js
+web/js/canvasRenderer.js
 web/js/uiController.js
 ~~~~~
-~~~~~javascript.old
-    trail.innerHTML = "";
-    path.forEach((step, idx) => {
-        const stateNode = document.createElement("span");
-        stateNode.className = "px-2.5 py-1 text-xs font-bold font-mono tracking-wider bg-sky-950 text-sky-300 rounded-md border border-sky-800 glow-ice";
-        stateNode.innerText = step.state;
-        trail.appendChild(stateNode);
 
-        if (step.move) {
-            const arrow = document.createElement("span");
-            arrow.className = "text-[10px] text-slate-500 flex flex-col items-center px-1";
-            const miniName = step.move.name.split(" ")[0];
-            arrow.innerHTML = `
-                <i class="fa-solid fa-chevron-right"></i>
-                <span class="text-[8px] text-slate-400 scale-90 text-center leading-tight">
-                    ${miniName}<br/>${step.move.difficulty}级
-                </span>`;
-            trail.appendChild(arrow);
-        }
-    });
+~~~~~act
+git_commit
 ~~~~~
-~~~~~javascript.new
-    trail.innerHTML = "";
-    path.forEach((step, idx) => {
-        // 绘制用刃状态节点 (天蓝微光)
-        const stateNode = document.createElement("span");
-        stateNode.className = "px-2.5 py-1 text-xs font-bold font-mono tracking-wider bg-sky-950 text-sky-300 rounded-md border border-sky-800 glow-ice flex items-center";
-        stateNode.innerText = step.state;
-        trail.appendChild(stateNode);
+~~~~~text
+feat(web): implement interactive trajectory simulation and semantic timeline
 
-        if (step.move) {
-            // 1. 动作节点前置衔接箭头 (柔和暗灰)
-            const preArrow = document.createElement("span");
-            preArrow.className = "text-[9px] text-slate-600 self-center px-0.5";
-            preArrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-            trail.appendChild(preArrow);
-
-            // 2. 橙色 LED 动作转换节点
-            const actNode = document.createElement("div");
-            // 内置柔和的 amber 发光滤镜与投影
-            actNode.className = "flex items-center space-x-1.5 px-2.5 py-1 bg-amber-950/40 border border-amber-500/40 rounded-md shadow-[0_0_10px_rgba(245,158,11,0.25)] text-amber-400 text-[10px] font-semibold";
-            
-            const miniName = step.move.name.split(" ")[0];
-            actNode.innerHTML = `
-                <span class="tracking-tight">${miniName}</span>
-                <span class="px-1 py-0.2 bg-amber-500 text-slate-950 rounded-[3px] text-[8px] font-extrabold leading-none scale-90 origin-right">
-                    ${step.move.difficulty}级
-                </span>
-            `;
-            trail.appendChild(actNode);
-
-            // 3. 动作节点后置衔接箭头
-            const postArrow = document.createElement("span");
-            postArrow.className = "text-[9px] text-slate-600 self-center px-0.5";
-            postArrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-            trail.appendChild(postArrow);
-        }
-    });
+This commit introduces a comprehensive suite of animation and interaction features:
+1. Dynamic Tracker: A synchronized "ice crystal" ball that follows the physical arc paths.
+2. Playback Control: Start/pause/restart logic with 0.5x/1.0x speed switching.
+3. Semantic Timeline: A linearized progress bar that visualizes trajectory segments (L/R foot colors) and move markers.
+4. Real-time HUD: A refactored dashboard showing the move flow (Previous -> Current State -> Next).
+5. Interaction: Fullscreen HUD controls, interactive progress dragging, and keyboard shortcuts (Space/F).
+6. UI Refinement: Upgraded the visual trail with orange LED-style action nodes for better readability.
 ~~~~~
 
 ### 下一步建议
-- **步法拖拽重组**：当前已规划轨迹只能通过“回撤”重新排布。未来可以允许直接拖拽这些橙色 LED 动作块来改变其在链路中的先后顺序，支持可视化重排。
-- **指示灯交互**：当鼠标悬停在轨迹图的动作图标上时，点亮对应位置的橙色 LED 节点，提供双向的图形-文字联动。
+- **数据持久化**：现在可以考虑增加“保存到本地”功能，将编排好的 JSON 序列存储在浏览器的 `localStorage` 中，防止刷新丢失。
+- **3D 投影实验**：目前的 2D 视角虽然清晰，但花样滑冰有很强的空间感。未来可以尝试引入 `Three.js` 进行 3D 视角的初步探索。
+- **性能审计**：随着 Canvas 绘制内容的增多，可以对 `computeGeometry` 进行 Memoization 优化，确保在超长路径下依然保持 60FPS。
