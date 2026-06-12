@@ -50,15 +50,18 @@ export function updateStats(path, undoCallback) {
         trail.appendChild(stateNode);
 
         if (step.move) {
-            const arrow = document.createElement("span");
-            arrow.className = "text-[10px] text-slate-500 flex flex-col items-center px-1";
-            const miniName = step.move.name.split(" ")[0];
-            arrow.innerHTML = `
-                <i class="fa-solid fa-chevron-right"></i>
-                <span class="text-[8px] text-slate-400 scale-90 text-center leading-tight">
-                    ${miniName}<br/>${step.move.difficulty}级
-                </span>`;
-            trail.appendChild(arrow);
+            const actionNode = document.createElement("div");
+            actionNode.className = "flex flex-col items-center -space-y-0.5 mx-0.5";
+            
+            const miniName = step.move.name.split(" ")[0].substring(0, 4);
+            actionNode.innerHTML = `
+                <div class="px-2 py-0.5 bg-orange-600/20 border border-orange-500/50 rounded-full shadow-[0_0_8px_rgba(249,115,22,0.3)] flex items-center space-x-1">
+                    <i class="fa-solid fa-bolt text-[8px] text-orange-400"></i>
+                    <span class="text-[9px] font-bold text-orange-300 uppercase tracking-tighter">${miniName}</span>
+                </div>
+                <div class="text-[8px] text-slate-500 font-mono scale-90">Lev.${step.move.difficulty}</div>
+            `;
+            trail.appendChild(actionNode);
         }
     });
 
