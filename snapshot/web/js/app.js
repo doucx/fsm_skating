@@ -4,6 +4,7 @@ let path = []; // 存储结构: [ { state: 'LFO', move: null } ]
 // 初始化
 document.addEventListener("DOMContentLoaded", () => {
     initChoreography();
+    initCanvasInteraction(); // 注入全屏高级手势控制（滚轮缩放与拖拽移动）
 });
 
 // 1. 初始化或重置编排
@@ -248,11 +249,23 @@ function drawSkatePath(pathData) {
     const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
     const offsetY = (canvas.height - h * scale) / 2 - minY * scale;
 
-    // 映射投影函数
-    const transform = (px, py) => ({
-        x: px * scale + offsetX,
-        y: py * scale + offsetY
-    });
+    // 映射投影函数 (全屏状态下融入鼠标手势)
+    const transform = (px, py) => {
+        const ax = px * scale + offsetX;
+        const ay = py * scale + offsetY;
+        
+        if (!document.fullscreenElement) {
+            return { x: ax, y: ay };
+        }
+        
+        // 以画布中点为物理缩放锚点，再加上平移量
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return {
+            x: (ax - cx) * zoomFactor + cx + panX,
+            y: (ay - cy) * zoomFactor + cy + panY
+        };
+    };
 
     // 3. 绘制微光网格冰面 scratch pattern 质感
     ctx.strokeStyle = "rgba(148, 163, 184, 0.04)";
@@ -531,6 +544,13 @@ async function generateSequence() {
 }
 
 // 5. 全屏切换与动态分辨率适配
+let zoomFactor = 1.0;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+
 function toggleFullscreen() {
     const container = document.getElementById("canvas-container");
     if (!document.fullscreenElement) {
@@ -542,8 +562,53 @@ function toggleFullscreen() {
     }
 }
 
+// 注册拖拽与滚动交互机制 (仅在全屏状态生效)
+function initCanvasInteraction() {
+    const canvas = document.getElementById("skate-canvas");
+    if (!canvas) return;
+
+    canvas.addEventListener("wheel", (e) => {
+        if (!document.fullscreenElement) return;
+        e.preventDefault(); // 阻止页面滚动
+
+        const zoomSpeed = 0.08;
+        if (e.deltaY < 0) {
+            zoomFactor *= (1 + zoomSpeed);
+        } else {
+            zoomFactor /= (1 + zoomSpeed);
+            zoomFactor = Math.max(0.15, zoomFactor); // 设定最小收缩边界
+        }
+        drawSkatePath(path);
+    }, { passive: false });
+
+    canvas.addEventListener("mousedown", (e) => {
+        if (!document.fullscreenElement) return;
+        isDragging = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+        if (!document.fullscreenElement || !isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        drawSkatePath(path);
+    });
+
+    window.addEventListener("mouseup", () => {
+        isDragging = false;
+    });
+}
+
 document.addEventListener("fullscreenchange", () => {
     const canvas = document.getElementById("skate-canvas");
+    
+    // 状态切换时彻底初始化拖拽平移参数，保障画面对齐
+    zoomFactor = 1.0;
+    panX = 0;
+    panY = 0;
+    isDragging = false;
+
     if (document.fullscreenElement) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
