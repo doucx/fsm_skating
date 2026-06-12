@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "Capture: M cli.py, M core.py, M engine.py ... and 2 more files", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781228304.2948956, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 引入 Pydantic 重构核心数据模型", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781228306.1884937, "duration_ms": 0}}

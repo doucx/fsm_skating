@@ -35,6 +35,14 @@ def check_match(
     return True
 
 
+class MoveOption(BaseModel):
+    """
+    转移选项模型，为 Web API 预留序列化能力。
+    """
+    target_state: State
+    move: Dict[str, Any]
+
+
 class ChoreographyEngine:
     """
     花样滑冰状态机编排与过滤引擎。
@@ -57,15 +65,10 @@ class ChoreographyEngine:
         self, current_state: State, max_difficulty: int = 999
     ) -> List[Dict[str, Any]]:
         """
-        管道式过滤核心逻辑：
-        1. 基础关系比对
-        2. YAML 双重规则匹配
-        3. 难度过滤器过滤
-        4. 稳定排序双键引擎排序
+        管道式过滤核心逻辑。
         """
         results = []
 
-        # 遍历其他 7 个潜在的转移目标状态 (原地不转移通常不被定义为物理步法动作)
         for target_state in ALL_STATES:
             if target_state == current_state:
                 continue
