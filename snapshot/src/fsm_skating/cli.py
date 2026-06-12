@@ -1,8 +1,8 @@
 import sys
 import argparse
 import os
-from typing import List, Tuple, Dict, Any, Optional
-from .engine import ChoreographyEngine, Move, MoveOption
+from typing import List, Tuple, Optional
+from .engine import ChoreographyEngine, Move
 from .core import State, ALL_STATES
 
 
@@ -181,7 +181,7 @@ def run_interactive(engine: ChoreographyEngine):
                     continue
                 selected = options[opt_idx]
 
-                # 完善前一个状态的指向 move 
+                # 完善前一个状态的指向 move
                 prev_state, _ = path[-1]
                 path[-1] = (prev_state, selected.move)
 

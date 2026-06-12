@@ -40,6 +40,7 @@ class Move(BaseModel):
     """
     表示一个滑冰动作的完整强类型模型。
     """
+
     id: str
     name: str
     category: str
@@ -54,6 +55,7 @@ class MoveOption(BaseModel):
     """
     转移选项模型，为 Web API 预留序列化能力。
     """
+
     target_state: State
     move: Move
 
@@ -62,6 +64,7 @@ class TransitionDetail(BaseModel):
     """
     单步物理转移的解析明细。
     """
+
     from_state: State
     to_state: State
     candidate_moves: List[Move]
@@ -72,6 +75,7 @@ class VerificationResponse(BaseModel):
     """
     序列解析与校验后的结构化响应报文。
     """
+
     valid: bool
     error: Optional[str] = None
     states: Optional[List[State]] = None
@@ -144,9 +148,7 @@ class ChoreographyEngine:
                         )
 
         # 排序引擎：根据 (Difficulty, Name) 双键组合进行稳定升序排序
-        results.sort(
-            key=lambda x: (x.move.difficulty, x.move.name)
-        )
+        results.sort(key=lambda x: (x.move.difficulty, x.move.name))
         return results
 
     def verify_sequence(self, sequence_str: str) -> VerificationResponse:
@@ -217,9 +219,7 @@ class ChoreographyEngine:
                 )
 
             # 升序排序匹配的动作列表
-            matched_moves.sort(
-                key=lambda m: (m.difficulty, m.name)
-            )
+            matched_moves.sort(key=lambda m: (m.difficulty, m.name))
 
             transitions_details.append(
                 TransitionDetail(

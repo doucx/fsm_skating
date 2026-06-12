@@ -1,12 +1,14 @@
 from typing import Dict
 from pydantic import BaseModel, Field, ConfigDict
 
+
 class State(BaseModel):
     """
     表示花样滑冰中的一个滑行瞬间状态。
     State = (Foot, Direction, Edge)
     使用 Pydantic 进行数据校验与序列化支持。
     """
+
     model_config = ConfigDict(frozen=True)
 
     foot: str = Field(..., pattern="^[LR]$")
@@ -31,6 +33,7 @@ class State(BaseModel):
     def __repr__(self) -> str:
         return f"State(foot='{self.foot}', direction='{self.direction}', edge='{self.edge}')"
 
+
 def get_relative_conditions(s1: State, s2: State) -> Dict[str, bool]:
     """
     计算从状态 s1 转移到状态 s2 的相对物理条件。
@@ -40,6 +43,7 @@ def get_relative_conditions(s1: State, s2: State) -> Dict[str, bool]:
         "same_dir": s1.direction == s2.direction,
         "same_edge": s1.edge == s2.edge,
     }
+
 
 def get_natural_curvature(state: State) -> str:
     """
@@ -55,6 +59,7 @@ def get_natural_curvature(state: State) -> str:
             return "CW" if state.edge == "O" else "CCW"
         else:  # B
             return "CCW" if state.edge == "O" else "CW"
+
 
 # 8 个基础状态常量列表
 ALL_STATES = [
