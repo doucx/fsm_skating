@@ -10,3 +10,17 @@ body {
 .glow-ice {
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
 }
+#canvas-container:fullscreen {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+}
+#canvas-container:fullscreen canvas {
+    width: 100vw !important;
+    height: 100vh !important;
+}

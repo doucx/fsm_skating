@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(web): 在轨迹流向图中显示具体的步法名称", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781230789.427082, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(web): 冰面轨迹图支持全屏放大并添加流动方向箭头", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781231009.0223079, "duration_ms": 0}}

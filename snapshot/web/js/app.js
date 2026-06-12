@@ -258,6 +258,32 @@ function drawSkatePath(pathData) {
             // 只截取中文名称第一部分
             const miniName = p.move.name.split(" ")[0].substring(0, 4);
             ctx.fillText(miniName, mx, my - 5);
+
+            // 绘制滑跑方向切线箭头
+            const worldMx = p.cx + p.R * Math.cos(midAngle);
+            const worldMy = p.cy + p.R * Math.sin(midAngle);
+            const pMid = transform(worldMx, worldMy);
+
+            const midK = p.anticlockwise ? -1 : 1;
+            const arrowAngle = Math.atan2(midK * Math.cos(midAngle), -midK * Math.sin(midAngle));
+
+            const arrowLength = 9;
+            const arrowWidth = 5;
+            const backX = pMid.x - arrowLength * Math.cos(arrowAngle);
+            const backY = pMid.y - arrowLength * Math.sin(arrowAngle);
+            
+            const leftX = backX + arrowWidth * Math.cos(arrowAngle + Math.PI / 2);
+            const leftY = backY + arrowWidth * Math.sin(arrowAngle + Math.PI / 2);
+            const rightX = backX + arrowWidth * Math.cos(arrowAngle - Math.PI / 2);
+            const rightY = backY + arrowWidth * Math.sin(arrowAngle - Math.PI / 2);
+
+            ctx.beginPath();
+            ctx.moveTo(pMid.x, pMid.y);
+            ctx.lineTo(leftX, leftY);
+            ctx.lineTo(rightX, rightY);
+            ctx.closePath();
+            ctx.fillStyle = "rgba(56, 189, 248, 0.85)";
+            ctx.fill();
         }
     }
 
@@ -443,3 +469,27 @@ async function generateSequence() {
         alert("通信异常，生成失败。");
     }
 }
+
+// 5. 全屏切换与动态分辨率适配
+function toggleFullscreen() {
+    const container = document.getElementById("canvas-container");
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().catch((err) => {
+            console.error(`无法进入全屏模式: ${err.message}`);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+document.addEventListener("fullscreenchange", () => {
+    const canvas = document.getElementById("skate-canvas");
+    if (document.fullscreenElement) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    } else {
+        canvas.width = 600;
+        canvas.height = 200;
+    }
+    drawSkatePath(path);
+});
