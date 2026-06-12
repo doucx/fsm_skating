@@ -21,7 +21,7 @@ uv run pytest
 uv pip install -e .
 ```
 
-### 4. 运行程序 (待 CLI 完成后)
+### 4. 运行程序
 ```bash
 uv run fsm-skating
 ```
