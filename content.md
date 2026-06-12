@@ -1,34 +1,35 @@
-现在项目配置文件和基础结构已经就绪。接下来的核心任务是实现状态机的数学空间模型与管道动作匹配引擎。
+好的。为了确保系统的健壮性并拥抱现代 Python 开发流程，我们将：
+1. **引入 `uv` 管理器**：通过在 `pyproject.toml` 中添加 `dev-dependencies` 并配置 `uv` 环境，利用其极速的包管理能力。
+2. **编写 `pytest` 测试套件**：
+   - `tests/test_core.py`：测试状态解析、非法输入拦截及物理关系计算。
+   - `tests/test_engine.py`：测试引擎加载、动作匹配、序列合法性校验以及基于 DFS 的随机路径生成。
 
-我们将：
-1. 编写 `src/fsm_skating/core.py`：定义花滑的 8 个物理滑行状态，封装 `State` 类，提供字符串解析与相等性校验，并提供相对滑行关系（脚、方向、用刃的同异判定）的函数 `get_relative_conditions`。
-2. 编写 `src/fsm_skating/engine.py`：实现核心 `ChoreographyEngine`。该引擎将加载 `moves_config.yaml` 配置文件，实现白皮书所述的“管道式过滤（Pipeline）”、双重规则匹配、难度过滤器、以及由 `(Difficulty, Name)` 决定的稳定双键排序引擎。此外，还将实现**序列合法性校验验证器**和基于 DFS 回溯的**智能随机路径生成器**。
+下面是本次实施的计划。
 
-下面是本次开发的计划。
-
-## [WIP] feat: 实现核心 FSM 状态模型与编排匹配引擎
+## [WIP] test: 添加核心逻辑测试并引入 uv 管理项目
 
 ### 用户需求
-需要搭建核心状态类和核心引擎逻辑，包含白皮书中第 2 节的 8 个基础状态定义和转移判定，第 4 节的 4 步匹配管道，以及第 5 节的合法性校验和随机生成算法。
+使用 `pytest` 编写测试，并引入 `uv` 作为项目管理工具，以提升开发效率和测试的覆盖率。
 
 ### 评论
-将 `State` 的物理计算与匹配引擎解耦是良好的面向对象实践。回溯 DFS 算法可以保证在复杂约束下高概率成功随机生成动作路径，而不会产生死胡同无解退出的情况，保障了智能生成的鲁棒性。
+`uv` 是目前 Python 生态中最快的包管理器之一，且完美支持 `pyproject.toml` 标准。结合 `pytest` 的参数化测试功能，我们可以高效地验证 8 个状态之间的 56 种潜在转移关系是否符合白皮书中的物理定义。
 
 ### 目标
-1. 编写 `src/fsm_skating/core.py` 完整模型。
-2. 编写 `src/fsm_skating/engine.py` 核心引擎，包含配置加载、管道过滤、排序、序列验证、自动生成等功能。
+1. 修改 `pyproject.toml` 以包含测试依赖并适配 `uv`。
+2. 编写 `tests/test_core.py` 验证 `State` 物理模型。
+3. 编写 `tests/test_engine.py` 验证核心编排引擎算法。
+4. 提供 `README.md` 说明如何使用 `uv` 运行测试。
 
 ### 基本原理
-1. `State` 封装 $F_{\text{oot}}$, $D_{\text{irection}}$, $E_{\text{dge}}$，用三位字符（如 `LFO`）简洁映射。
-2. 双重规则匹配不仅验证 YAML 中的 `conditions`，还会验证 `start_constraints` 以区分如“前外”与“后外”的不同动作分支。
-3. 稳定排序：Python 的 `sort(key=...)` 默认是稳定的，我们使用元组 `(Difficulty, Name)` 作为排序键。
+1. 在 `pyproject.toml` 中增加 `[dependency-groups]` (PEP 735 风格) 或 `[tool.uv]` 的 `dev-dependencies`。
+2. `pytest` 通过 `monkeypatch` 或直接加载本地 `moves_config.yaml` 来进行集成测试。
 
 ### 标签
-#intent/build #flow/ready #priority/high
-#comp/engine #concept/state #concept/executor #scope/core
+#intent/tooling #flow/ready #priority/high 
+#comp/build #comp/tests #scope/dx #scope/core
 #ai/delegate
 #task/domain/testing
-#task/object/core-engine
+#task/object/test-suite-and-uv
 #task/action/integration
 #task/state/continue #task/status/active
 
@@ -36,299 +37,171 @@
 
 ### Script
 
-#### Acts 1: 创建状态机核心模型文件 `src/fsm_skating/core.py`
+#### Acts 1: 更新 `pyproject.toml` 以支持 `uv` 和开发依赖
 
-定义状态空间，并提供两个状态之间的滑行关系差异比对。
+我们将添加 `pytest` 到开发依赖中。
 
 ~~~~~act
-write_file
-src/fsm_skating/core.py
+patch_file
+pyproject.toml
 ~~~~~
-~~~~~python
-from typing import Dict
-
-class State:
-    """
-    表示花样滑冰中的一个滑行瞬间状态。
-    State = (Foot, Direction, Edge)
-    """
-    def __init__(self, foot: str, direction: str, edge: str):
-        foot = foot.upper()
-        direction = direction.upper()
-        edge = edge.upper()
-
-        if foot not in ("L", "R"):
-            raise ValueError(f"Invalid Foot (脚): '{foot}'. Must be 'L' (左脚) or 'R' (右脚).")
-        if direction not in ("F", "B"):
-            raise ValueError(f"Invalid Direction (方向): '{direction}'. Must be 'F' (前向) or 'B' (后向).")
-        if edge not in ("O", "I"):
-            raise ValueError(f"Invalid Edge (用刃): '{edge}'. Must be 'O' (外刃) or 'I' (内刃).")
-
-        self.foot = foot
-        self.direction = direction
-        self.edge = edge
-
-    @classmethod
-    def from_string(cls, s: str) -> "State":
-        """
-        从简写字符串解析状态。例如: "LFO" -> 左前外刃
-        """
-        s = s.strip().upper()
-        if len(s) != 3:
-            raise ValueError(f"Invalid state format: '{s}'. Must be 3 characters, e.g., 'LFO'.")
-        return cls(s[0], s[1], s[2])
-
-    def __str__(self) -> str:
-        return f"{self.foot}{self.direction}{self.edge}"
-
-    def __repr__(self) -> str:
-        return f"State({self.foot}, {self.direction}, {self.edge})"
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, State):
-            return False
-        return (self.foot == other.foot and 
-                self.direction == other.direction and 
-                self.edge == other.edge)
-
-    def __hash__(self) -> int:
-        return hash((self.foot, self.direction, self.edge))
-
-
-def get_relative_conditions(s1: State, s2: State) -> Dict[str, bool]:
-    """
-    计算从状态 s1 转移到状态 s2 的相对物理条件比对属性：
-    - same_foot: 是否同脚
-    - same_dir: 是否同向
-    - same_edge: 是否同刃
-    """
-    return {
-        "same_foot": s1.foot == s2.foot,
-        "same_dir": s1.direction == s2.direction,
-        "same_edge": s1.edge == s2.edge,
-    }
-
-
-# 8 个基础状态常量列表
-ALL_STATES = [
-    State("L", "F", "O"),
-    State("L", "F", "I"),
-    State("L", "B", "O"),
-    State("L", "B", "I"),
-    State("R", "F", "O"),
-    State("R", "F", "I"),
-    State("R", "B", "O"),
-    State("R", "B", "I"),
+~~~~~toml
+    "pyyaml>=6.0",
 ]
+
+[project.scripts]
+~~~~~
+~~~~~toml
+    "pyyaml>=6.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
 ~~~~~
 
-#### Acts 2: 创建状态机编排与匹配引擎文件 `src/fsm_skating/engine.py`
+#### Acts 2: 编写物理模型测试 `tests/test_core.py`
 
-加载 `moves_config.yaml` 外部配置文件，实现管道式过滤逻辑、序列校验逻辑与智能路径生成。
+验证状态的正确解析和物理差异比对逻辑。
 
 ~~~~~act
 write_file
-src/fsm_skating/engine.py
+tests/test_core.py
 ~~~~~
 ~~~~~python
+import pytest
+from fsm_skating.core import State, get_relative_conditions
+
+def test_state_creation():
+    s = State("L", "F", "O")
+    assert str(s) == "LFO"
+    assert s.foot == "L"
+    assert s.direction == "F"
+    assert s.edge == "O"
+
+def test_state_invalid_creation():
+    with pytest.raises(ValueError, match="Invalid Foot"):
+        State("X", "F", "O")
+    with pytest.raises(ValueError, match="Invalid Direction"):
+        State("L", "U", "O")
+    with pytest.raises(ValueError, match="Invalid state format"):
+        State.from_string("LF")
+
+def test_relative_conditions():
+    s1 = State.from_string("LFO")
+    s2 = State.from_string("LBI")
+    conds = get_relative_conditions(s1, s2)
+    assert conds["same_foot"] is True
+    assert conds["same_dir"] is False
+    assert conds["same_edge"] is False
+
+    s3 = State.from_string("RFO")
+    conds2 = get_relative_conditions(s1, s3)
+    assert conds2["same_foot"] is False
+    assert conds2["same_dir"] is True
+    assert conds2["same_edge"] is True
+~~~~~
+
+#### Acts 3: 编写引擎逻辑测试 `tests/test_engine.py`
+
+验证加载配置、动作过滤匹配、序列校验和路径生成。
+
+~~~~~act
+write_file
+tests/test_engine.py
+~~~~~
+~~~~~python
+import pytest
 import os
-import yaml
-import random
-from typing import List, Dict, Tuple, Any, Optional
-from .core import State, get_relative_conditions, ALL_STATES
+from fsm_skating.engine import ChoreographyEngine
+from fsm_skating.core import State
 
-def check_match(current_state: State, target_state: State, move_config: Dict[str, Any]) -> bool:
-    """
-    双重规则匹配逻辑。
-    1. 校验基础 conditions 转移差异是否匹配。
-    2. 校验起始状态约束 start_constraints (若有)。
-    """
-    conditions = move_config.get("conditions", {})
-    actual_conditions = get_relative_conditions(current_state, target_state)
+@pytest.fixture
+def engine():
+    # 假设 moves_config.yaml 在项目根目录
+    return ChoreographyEngine("moves_config.yaml")
 
-    # 门禁一：基础关系比对
-    if (conditions.get("same_foot") != actual_conditions["same_foot"] or
-        conditions.get("same_dir") != actual_conditions["same_dir"] or
-        conditions.get("same_edge") != actual_conditions["same_edge"]):
-        return False
+def test_load_config(engine):
+    assert len(engine.moves) > 0
+    assert engine.moves[0]["id"] == "change_of_edge"
 
-    # 门禁二：起始约束验证
-    if "start_constraints" in move_config:
-        constraints = move_config["start_constraints"]
-        if "dir" in constraints and current_state.direction != constraints["dir"]:
-            return False
-        if "edge" in constraints and current_state.edge != constraints["edge"]:
-            return False
+def test_transitions_filtering(engine):
+    # LFO (左前外) 
+    # 转移到 LFI (左前内) 应该是 变刃滑行 (Change of Edge), 难度 1
+    current = State.from_string("LFO")
+    results = engine.get_possible_transitions(current)
+    
+    # 寻找目标为 LFI 的动作
+    lfi_moves = [r for r in results if str(r["target_state"]) == "LFI"]
+    assert len(lfi_moves) >= 1
+    assert lfi_moves[0]["move"]["id"] == "change_of_edge"
 
-    return True
+def test_verify_sequence(engine):
+    # 前内莫霍克 (RFI -> LBI) 是 conditions: foot=False, dir=False, edge=True, start: F, I
+    res = engine.verify_sequence("RFI -> LBI")
+    assert res["valid"] is True
+    assert res["transitions"][0]["selected_move"]["id"] == "forward_inside_mohawk"
 
+def test_invalid_sequence(engine):
+    # 原地停滞校验
+    res = engine.verify_sequence("LFO -> LFO")
+    assert res["valid"] is False
+    assert "原地停滞" in res["error"]
 
-class ChoreographyEngine:
-    """
-    花样滑冰状态机编排与过滤引擎。
-    """
-    def __init__(self, config_path: str):
-        self.config_path = config_path
-        self.moves = self._load_config()
+def test_generate_sequence(engine):
+    # 测试随机生成 5 步
+    path = engine.generate_sequence(steps=5, max_difficulty=3, start_state=State.from_string("LFO"))
+    assert path is not None
+    assert len(path) == 6 # 5步动作产生 6 个状态
+    # 验证生成的每一步是否都真实存在且符合难度要求
+    for i in range(len(path) - 1):
+        move = path[i][1]
+        assert move["difficulty"] <= 3
+~~~~~
 
-    def _load_config(self) -> List[Dict[str, Any]]:
-        if not os.path.exists(self.config_path):
-            raise FileNotFoundError(f"Configuration file not found at: {self.config_path}")
-        with open(self.config_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-        return data.get("moves", [])
+#### Acts 4: 创建 `README.md` 说明 `uv` 使用方法
 
-    def get_possible_transitions(self, current_state: State, max_difficulty: int = 999) -> List[Dict[str, Any]]:
-        """
-        管道式过滤核心逻辑：
-        1. 基础关系比对
-        2. YAML 双重规则匹配
-        3. 难度过滤器过滤
-        4. 稳定排序双键引擎排序
-        """
-        results = []
+~~~~~act
+write_file
+README.md
+~~~~~
+~~~~~markdown
+# 花样滑冰步法智能编排状态机 (FSM Skating)
 
-        # 遍历其他 7 个潜在的转移目标状态 (原地不转移通常不被定义为物理步法动作)
-        for target_state in ALL_STATES:
-            if target_state == current_state:
-                continue
+基于有限状态机 (FSM) 的花滑步法智能编排引擎。
 
-            for move in self.moves:
-                # 校验匹配
-                if check_match(current_state, target_state, move):
-                    # 难度过滤
-                    diff = move.get("difficulty", 0)
-                    if diff <= max_difficulty:
-                        results.append({
-                            "target_state": target_state,
-                            "move": move
-                        })
+## 开发与管理 (使用 uv)
 
-        # 排序引擎：根据 (Difficulty, Name) 双键组合进行稳定升序排序
-        results.sort(key=lambda x: (x["move"].get("difficulty", 0), x["move"].get("name", "")))
-        return results
+本项目使用 [uv](https://github.com/astral-sh/uv) 进行管理。
 
-    def verify_sequence(self, sequence_str: str) -> Dict[str, Any]:
-        """
-        序列解析与合法性验证模块：
-        验证一段类似 "LFO -> LBI -> RFI" 的用刃状态序列，解析出每一个物理动作及难度评分。
-        """
-        parts = [p.strip().upper() for p in sequence_str.split("->") if p.strip()]
-        states: List[State] = []
-        for part in parts:
-            try:
-                states.append(State.from_string(part))
-            except ValueError as e:
-                return {
-                    "valid": False,
-                    "error": f"状态字符 '{part}' 格式有误: {str(e)}"
-                }
+### 1. 安装环境与依赖
+```bash
+uv sync
+```
 
-        if len(states) < 2:
-            return {
-                "valid": False,
-                "error": "状态序列中至少需要包含 2 个有效状态才能进行转移校验。"
-            }
+### 2. 运行测试
+```bash
+uv run pytest
+```
 
-        transitions_details = []
-        total_difficulty = 0
+### 3. 安装项目为可编辑模式
+```bash
+uv pip install -e .
+```
 
-        for i in range(len(states) - 1):
-            s_from = states[i]
-            s_to = states[i+1]
-
-            if s_from == s_to:
-                return {
-                    "valid": False,
-                    "error": f"第 {i+1} 步转移出现原地停滞 ({s_from} -> {s_to})，这不符合动力学步法转移规则。"
-                }
-
-            # 检索所有匹配当前转移的动作
-            matched_moves = []
-            for move in self.moves:
-                if check_match(s_from, s_to, move):
-                    matched_moves.append(move)
-
-            if not matched_moves:
-                return {
-                    "valid": False,
-                    "error": f"无法识别的物理转移: 从状态 {s_from} 无法直接通过任何已知动作转移到 {s_to}。"
-                }
-
-            # 升序排序匹配的动作列表
-            matched_moves.sort(key=lambda m: (m.get("difficulty", 0), m.get("name", "")))
-
-            transitions_details.append({
-                "from_state": s_from,
-                "to_state": s_to,
-                "candidate_moves": matched_moves,
-                "selected_move": matched_moves[0]  # 默认推选难度最低且字典序最小的最简动作
-            })
-            total_difficulty += matched_moves[0].get("difficulty", 0)
-
-        return {
-            "valid": True,
-            "states": states,
-            "transitions": transitions_details,
-            "total_difficulty": total_difficulty
-        }
-
-    def generate_sequence(self, steps: int, max_difficulty: int, start_state: Optional[State] = None) -> Optional[List[Tuple[State, Optional[Dict[str, Any]]]]]:
-        """
-        智能随机生成模块：
-        生成一段包含指定步数（即 steps 次动作转移，共 steps + 1 个状态）的合规路径。
-        使用带有回溯 (DFS) 的算法，避免随机游走陷入局部死胡同。
-        
-        返回列表结构：[(S0, M1), (S1, M2), ..., (Sn, None)] 
-        其中 S_i 为当前状态，M_i+1 为转移到下一个状态所采用的动作，末尾元素无后续动作为 None。
-        """
-        if steps <= 0:
-            return []
-
-        # 若未提供起始状态，随机从 8 个基础状态中挑选一个
-        init_state = start_state if start_state else random.choice(ALL_STATES)
-
-        def dfs(curr_state: State, remaining_steps: int) -> Optional[List[Tuple[State, Dict[str, Any]]]]:
-            if remaining_steps == 0:
-                return []
-
-            # 获取当前状态可行候选
-            options = self.get_possible_transitions(curr_state, max_difficulty)
-            if not options:
-                return None
-
-            # 引入随机性：对当前候选动作进行随机打乱
-            shuffled_options = list(options)
-            random.shuffle(shuffled_options)
-
-            for opt in shuffled_options:
-                nxt_state = opt["target_state"]
-                move = opt["move"]
-
-                sub_path = dfs(nxt_state, remaining_steps - 1)
-                if sub_path is not None:
-                    # 递归链成功建立
-                    return [(nxt_state, move)] + sub_path
-
-            return None
-
-        sub_path = dfs(init_state, steps)
-        if sub_path is None:
-            return None
-
-        # 组装返回结果
-        result = []
-        curr = init_state
-        for nxt_state, move in sub_path:
-            result.append((curr, move))
-            curr = nxt_state
-        result.append((curr, None))
-
-        return result
+### 4. 运行程序 (待 CLI 完成后)
+```bash
+uv run fsm-skating
+```
 ~~~~~
 
 ### 下一步建议
-我们现在已经有了完整的业务层和模型层逻辑。下一步我们需要：
-1. 为核心逻辑编写单元测试，创建 `tests/test_engine.py`。
-2. 运行测试以验证模型及过滤、校验、生成功能的正确性。
-3. 随后开发 `src/fsm_skating/cli.py` 命令行模块，实现人机交互终端。
+1. 在测试通过后，我们将实现 `src/fsm_skating/cli.py`。
+2. CLI 将包含三个子模块：
+   - `interactive`：手动编排模式。
+   - `verify`：序列校验模式。
+   - `generate`：自动随机生成模式。
+3. 完善程序的异常处理和用户交互体验。

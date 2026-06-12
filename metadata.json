@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 实现核心 FSM 状态模型与编排匹配引擎", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781225534.2554903, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] test: 添加核心逻辑测试并引入 uv 管理项目", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781225709.5149496, "duration_ms": 0}}
