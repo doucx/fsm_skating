@@ -12,6 +12,7 @@ from fsm_skating.services.engine import (
     VerificationResponse,
     MoveOption,
     Move,
+    MoveVerificationResponse,
 )
 
 app = FastAPI(
@@ -45,6 +46,11 @@ class VerifyRequest(BaseModel):
     sequence: str
 
 
+class VerifyMovesRequest(BaseModel):
+    move_ids: List[str]
+    start_state: Optional[str] = None
+
+
 class GenerateRequest(BaseModel):
     steps: int
     max_difficulty: int = 5
@@ -61,6 +67,21 @@ def verify_sequence(request: VerifyRequest):
     if not engine:
         raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
     return engine.verify_sequence(request.sequence)
+
+
+@app.post("/api/verify/moves", response_model=MoveVerificationResponse)
+def verify_moves_sequence(request: VerifyMovesRequest):
+    if not engine:
+        raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
+
+    start_state_obj = None
+    if request.start_state:
+        try:
+            start_state_obj = State.from_string(request.start_state)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"无效的起始滑行状态: {e}")
+
+    return engine.verify_move_sequence(request.move_ids, start_state_obj)
 
 
 @app.get("/api/transitions/{state_str}", response_model=List[MoveOption])

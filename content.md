@@ -1,27 +1,35 @@
-我们现在为第二阶段的核心功能——动作驱动（Move-Centric）校验器编写单元测试。这些测试将验证系统是否能根据一组步法名称准确还原选手的冰面轨迹，并能在违反物理约束时及时“报错”。
+我们现在进入 **第三阶段：API 路由升级与多模式支持**。
 
-## [WIP] test: 验证动作驱动校验器 (Move-Centric) 的全段推导逻辑
+在这一阶段，我们将在 FastAPI 路由层中引入全新的接口，正式将动作驱动（Move-Centric）校验引擎暴露给客户端：
+1. 升级后端导入声明，公开 `MoveVerificationResponse` 类型。
+2. 新增一个 `POST` 请求接口 `/api/verify/moves`，支持接收动作 ID 序列和可选的初始状态，并返回状态链的物理演算和合规性结果。
+
+以下是具体的实施计划。
+
+## [WIP] feat: 在 FastAPI 路由层中新增动作驱动校验接口 (/api/verify/moves)
 
 ### 用户需求
-需要确保 `verify_move_sequence` 方法能够正确处理动作序列的演算。包括：正确推导初始状态、按顺序演算中间状态、正确计算总难度，以及在动作起滑约束（如必须前滑起步但实际处于后滑状态）不匹配时给出清晰的错误提示。
+我们需要允许前端或其他客户端应用（如 Web 界面或命令行应用）通过标准 HTTP 协议来校验一个动作序列。请求中不需要传递繁琐的刃状态，只需要传递动作 ID 链，后端 API 应当能返回完整的用刃状态演算结果和校验状态。
 
 ### 评论
-动作驱动校验是本系统的核心竞争力。通过测试，我们确保了即使用户不提供中间状态，系统也能通过物理规则“预见”选手的动作路径，这极大地降低了编排软件的使用门槛。
+通过标准的 RESTful API 暴露出新算法，可以让沙盒 TUI/Web 与底层物理模型充分解耦。这也使我们的软件可以通过简单的 JSON 格式，与任意第三方冰场电子板、训练统计软件进行网络集成。
 
 ### 目标
-1. 验证在未提供初始状态时，系统能根据首个动作的约束自动推导出合理的起点。
-2. 验证多步动作组合（如：标准蹬冰 -> 前内转三）的连续演化轨迹。
-3. 验证约束冲突检测：当一个要求“前滑”的动作被放置在“后滑”状态之后时，系统应拦截并报错。
+1. 在 `src/fsm_skating/api/main.py` 中，导入第二阶段定义的 `MoveVerificationResponse`。
+2. 声明 `VerifyMovesRequest` Pydantic 请求模型。
+3. 创建新的路由方法 `/api/verify/moves`，实现状态码错误控制，调用引擎底层演算并返回校验 JSON。
 
 ### 基本原理
-我们将构建针对 `engine.verify_move_sequence` 的多组测试场景。利用 `config/moves_config.yaml` 中定义的真实步法数据，检查返回的 `trace` 列表中每一个 `from_state`、`move` 和 `to_state` 是否符合逻辑。
+1. 声明 `VerifyMovesRequest` 接收参数：`move_ids`（列表型，必需）和 `start_state`（字符型，可选）。
+2. 在路由内部，如果接收到了 `start_state`，尝试用 `State.from_string` 进行反序列化，若格式不合规（如 `LXX`）则抛出 HTTP 400 Bad Request 错误。
+3. 调用 `engine.verify_move_sequence` 计算物理链条。接口会自动将结果序列化为 `MoveVerificationResponse` 格式返回。
 
 ### 标签
-#intent/tooling #flow/ready #priority/medium
-#comp/tests #concept/executor #scope/core
+#intent/build #flow/ready #priority/high
+#comp/interfaces #comp/runtime #scope/api
 #ai/instruct
-#task/domain/testing
-#task/object/move-centric-verification-tests
+#task/domain/engine
+#task/object/api-route-extension
 #task/action/implementation
 #task/state/continue #task/status/active
 
@@ -29,99 +37,105 @@
 
 ### Script
 
-#### Acts 1: 创建动作驱动校验单元测试文件
+#### Acts 1: 在 API 层中引入响应模型与声明请求模型
 
-我们将新建 `tests/test_phase2_move_centric.py`，涵盖成功推演和约束失败等多种边界情况。
+我们修改 `src/fsm_skating/api/main.py` 的顶部导入部分，并为新接口定义专用的请求体模型。
 
 ~~~~~act
-write_file
-tests/test_phase2_move_centric.py
+patch_file
+src/fsm_skating/api/main.py
 ~~~~~
-~~~~~python
-import pytest
-from fsm_skating.services.engine import ChoreographyEngine
+~~~~~python.old
+# 重定向导入路径到新的 DDD 层次结构
 from fsm_skating.domain.models import State
+from fsm_skating.services.engine import (
+    ChoreographyEngine,
+    VerificationResponse,
+    MoveOption,
+    Move,
+)
+~~~~~
+~~~~~python.new
+# 重定向导入路径到新的 DDD 层次结构
+from fsm_skating.domain.models import State
+from fsm_skating.services.engine import (
+    ChoreographyEngine,
+    VerificationResponse,
+    MoveOption,
+    Move,
+    MoveVerificationResponse,
+)
+~~~~~
+
+~~~~~act
+patch_file
+src/fsm_skating/api/main.py
+~~~~~
+~~~~~python.old
+class VerifyRequest(BaseModel):
+    sequence: str
 
 
-@pytest.fixture
-def engine():
-    return ChoreographyEngine("config/moves_config.yaml")
+class GenerateRequest(BaseModel):
+~~~~~
+~~~~~python.new
+class VerifyRequest(BaseModel):
+    sequence: str
 
 
-def test_verify_move_sequence_success(engine):
-    """
-    测试成功的动作序列推导:
-    1. 标准蹬冰 (Stroke)
-    2. 前内转三 (Forward Inside Three-Turn)
-    """
-    # LFO 起始
-    start = State.from_string("LFO")
-    moves = ["stroke", "forward_inside_three_turn"]
-    
-    res = engine.verify_move_sequence(moves, start_state=start)
-    
-    assert res.valid is True
-    assert len(res.trace) == 2
-    
-    # 第一步: LFO --(Stroke)--> RFI
-    # Stroke 条件: 异脚(F), 同向(T), 变刃(F)
-    step1 = res.trace[0]
-    assert str(step1.from_state) == "LFO"
-    assert step1.move.id == "stroke"
-    assert str(step1.to_state) == "RFI"
-    
-    # 第二步: RFI --(Forward Inside Three-Turn)--> RBO
-    # Three-Turn 条件: 同脚(T), 变向(F), 变刃(F)
-    # 且 RFI 符合该动作的 Start Constraints (F, I)
-    step2 = res.trace[1]
-    assert str(step2.from_state) == "RFI"
-    assert step2.move.id == "forward_inside_three_turn"
-    assert str(step2.to_state) == "RBO"
-    
-    # 难度: 1 (Stroke) + 3 (FI 3-Turn) = 4
-    assert res.total_difficulty == 4
+class VerifyMovesRequest(BaseModel):
+    move_ids: List[str]
+    start_state: Optional[str] = None
 
 
-def test_verify_move_sequence_default_start(engine):
-    """验证在不提供起始状态时，系统能自动推导"""
-    # 首个动作是前外转三，其约束是 F, O。系统应默认给出 LFO。
-    moves = ["forward_outside_three_turn"]
-    res = engine.verify_move_sequence(moves)
-    
-    assert res.valid is True
-    assert str(res.trace[0].from_state) == "LFO"
+class GenerateRequest(BaseModel):
+~~~~~
+
+#### Acts 2: 声明步法校验接口路由 `/api/verify/moves`
+
+我们在 `/api/verify` 原有状态校验路由下方，追加 `/api/verify/moves` 接口定义。
+
+~~~~~act
+patch_file
+src/fsm_skating/api/main.py
+~~~~~
+~~~~~python.old
+@app.post("/api/verify", response_model=VerificationResponse)
+def verify_sequence(request: VerifyRequest):
+    if not engine:
+        raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
+    return engine.verify_sequence(request.sequence)
 
 
-def test_verify_move_sequence_failure_constraints(engine):
-    """验证动作起滑约束冲突的情况"""
-    # 起始于 LBO (后滑)
-    start = State.from_string("LBO")
-    # 尝试做一个必须前滑起步的动作
-    moves = ["forward_outside_three_turn"]
-    
-    res = engine.verify_move_sequence(moves, start_state=start)
-    
-    assert res.valid is False
-    assert "要求以 'F' 向起滑" in res.error
-    assert "当前滑行状态为 'LBO'" in res.error
+@app.get("/api/transitions/{state_str}", response_model=List[MoveOption])
+~~~~~
+~~~~~python.new
+@app.post("/api/verify", response_model=VerificationResponse)
+def verify_sequence(request: VerifyRequest):
+    if not engine:
+        raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
+    return engine.verify_sequence(request.sequence)
 
 
-def test_verify_move_sequence_complex_chain(engine):
-    """测试较长且包含异脚变换的复杂链条"""
-    # 序列: LFO -> (Stroke) -> RFI -> (FI Mohawk) -> LBI -> (BI Three-Turn) -> LFO
-    moves = ["stroke", "forward_inside_mohawk", "backward_inside_three_turn"]
-    start = State.from_string("LFO")
-    
-    res = engine.verify_move_sequence(moves, start_state=start)
-    
-    assert res.valid is True
-    assert str(res.trace[0].to_state) == "RFI"
-    assert str(res.trace[1].to_state) == "LBI"
-    assert str(res.trace[2].to_state) == "LFO"
-    assert res.total_difficulty == 1 + 2 + 4  # 7
+@app.post("/api/verify/moves", response_model=MoveVerificationResponse)
+def verify_moves_sequence(request: VerifyMovesRequest):
+    if not engine:
+        raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
+
+    start_state_obj = None
+    if request.start_state:
+        try:
+            start_state_obj = State.from_string(request.start_state)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"无效的起始滑行状态: {e}")
+
+    return engine.verify_move_sequence(request.move_ids, start_state_obj)
+
+
+@app.get("/api/transitions/{state_str}", response_model=List[MoveOption])
 ~~~~~
 
 ### 下一步建议
-1. **运行测试**：执行 `pytest tests/test_phase2_move_centric.py` 确保逻辑闭环。
-2. **开展第三阶段**：现在底层引擎已经“能掐会算”，我们可以开始升级 API 路由，将这个能力暴露给前端。我们将增加 `/api/verify/moves` 接口。
-3. **前端适配**：在第四阶段，我们需要在 Web 端增加输入动作序列的功能，并调用这个新接口展示演化轨迹。
+1. **编写集成测试**：我们可以通过编写测试（或使用 FastAPI 提供的 `TestClient`）对这个网络接口进行端到端校验。
+2. **开展第四阶段**：既然网络接口已经准备就绪，我们将进入前端。在前端代码中，我们需要修改 `web/js/api.js`，增加对新接口的网络封装，以便 Web 应用能流畅调用步法校验。
+3. **完成前三阶段工作提交**：如果需要，我们可以首先运行全局 pytest 确保之前编写的所有测试通过，再向前端进军。你可以随时告诉我你想如何开始下一步。
