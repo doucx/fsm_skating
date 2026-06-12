@@ -1,2 +1,0 @@
-[console_scripts]
-fsm-skating = fsm_skating.cli:main
