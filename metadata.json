@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] refactor(web): 重构动态状态面板与进度条 Tooltip 的语义流与视觉样式", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781238105.7756362, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] style(web): 将已规划轨迹流向动作节点升级为橙色微光指示灯", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781238543.7447963, "duration_ms": 0}}
