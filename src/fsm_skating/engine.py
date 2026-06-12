@@ -66,9 +66,24 @@ class ChoreographyEngine:
                     # 难度过滤
                     diff = move.get("difficulty", 0)
                     if diff <= max_difficulty:
+                        # 计算绝对转体方向 (CW / CCW)
+                        turn_rot = move.get("turn_rotation")
+                        abs_rot = None
+                        if turn_rot == "natural":
+                            from .core import get_natural_curvature
+                            abs_rot = get_natural_curvature(current_state)
+                        elif turn_rot == "opposite":
+                            from .core import get_natural_curvature
+                            start_curv = get_natural_curvature(current_state)
+                            abs_rot = "CW" if start_curv == "CCW" else "CCW"
+
+                        # 复制一份动作配置，注入计算得到的绝对旋转方向
+                        move_with_rot = dict(move)
+                        move_with_rot["rotation_dir"] = abs_rot
+
                         results.append({
                             "target_state": target_state,
-                            "move": move
+                            "move": move_with_rot
                         })
 
         # 排序引擎：根据 (Difficulty, Name) 双键组合进行稳定升序排序
@@ -114,7 +129,20 @@ class ChoreographyEngine:
             matched_moves = []
             for move in self.moves:
                 if check_match(s_from, s_to, move):
-                    matched_moves.append(move)
+                    # 计算绝对转体方向 (CW / CCW)
+                    turn_rot = move.get("turn_rotation")
+                    abs_rot = None
+                    if turn_rot == "natural":
+                        from .core import get_natural_curvature
+                        abs_rot = get_natural_curvature(s_from)
+                    elif turn_rot == "opposite":
+                        from .core import get_natural_curvature
+                        start_curv = get_natural_curvature(s_from)
+                        abs_rot = "CW" if start_curv == "CCW" else "CCW"
+
+                    move_with_rot = dict(move)
+                    move_with_rot["rotation_dir"] = abs_rot
+                    matched_moves.append(move_with_rot)
 
             if not matched_moves:
                 return {

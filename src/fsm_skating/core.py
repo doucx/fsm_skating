@@ -62,6 +62,24 @@ def get_relative_conditions(s1: State, s2: State) -> Dict[str, bool]:
     }
 
 
+def get_natural_curvature(state: State) -> str:
+    """
+    根据滑行的物理力学，推导当前状态滑行轨迹的自然圆弧弯曲方向 (Curvature)：
+    - LFO / RFI / LBI / RBO 的圆弧弯曲为逆时针 (CCW)
+    - RFO / LFI / LBO / RBI 的圆弧弯曲为顺时针 (CW)
+    """
+    if state.foot == "L":
+        if state.direction == "F":
+            return "CCW" if state.edge == "O" else "CW"
+        else:  # B
+            return "CW" if state.edge == "O" else "CCW"
+    else:  # R
+        if state.direction == "F":
+            return "CW" if state.edge == "O" else "CCW"
+        else:  # B
+            return "CCW" if state.edge == "O" else "CW"
+
+
 # 8 个基础状态常量列表
 ALL_STATES = [
     State("L", "F", "O"),
