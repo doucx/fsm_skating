@@ -312,10 +312,10 @@ function updateLinearTimelineUI(geometry) {
         return;
     }
 
-    // 只有当路径步数发生变化时才重新渲染背景片段，优化性能
-    const currentStepCount = arcs.length;
-    if (container.dataset.lastCount == currentStepCount) return;
-    container.dataset.lastCount = currentStepCount;
+    // 采用“状态流+动作特征唯一签名”来精准判断是否需要重新渲染，避免多余的 DOM 开销且防误拦截
+    const signature = arcs.map(arc => `${arc.state}:${arc.move ? arc.move.id : ''}`).join("|");
+    if (container.dataset.lastSignature === signature) return;
+    container.dataset.lastSignature = signature;
 
     container.innerHTML = "";
     const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
