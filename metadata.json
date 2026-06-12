@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] refactor: 重构 Engine 输出，全面实现 Pydantic 模型化", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781228557.2928, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] refactor(core): migrate to Pydantic models for serialization", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781228646.295326, "duration_ms": 0}}
