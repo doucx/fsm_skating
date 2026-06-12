@@ -8,6 +8,7 @@ let renderer;
 
 // 动画状态
 let isAnimating = false;
+let isDraggingProgress = false;
 let animProgress = 0; // 0.0 to 1.0
 let lastAnimTime = 0;
 let playbackSpeed = 1.0;
@@ -292,9 +293,61 @@ function drawPath() {
     const geometry = computeGeometry(path);
     renderer.draw(geometry);
     
-    if (isAnimating || animProgress > 0) {
+    // 渲染底层物理时间轴
+    updateLinearTimelineUI(geometry);
+    
+    if (isAnimating || animProgress > 0 || isDraggingProgress) {
         renderAnimationStep(geometry);
     }
+}
+
+/**
+ * 将 2D 轨迹投影到 1D 进度条上
+ */
+function updateLinearTimelineUI(geometry) {
+    const { arcs } = geometry;
+    const container = document.getElementById("timeline-segments");
+    if (!arcs || arcs.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+
+    // 只有当路径步数发生变化时才重新渲染背景片段，优化性能
+    const currentStepCount = arcs.length;
+    if (container.dataset.lastCount == currentStepCount) return;
+    container.dataset.lastCount = currentStepCount;
+
+    container.innerHTML = "";
+    const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+
+    arcs.forEach((arc, idx) => {
+        const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
+        const widthPercent = (arcLen / totalLength) * 100;
+        
+        const seg = document.createElement("div");
+        seg.className = "timeline-segment";
+        seg.style.width = `${widthPercent}%`;
+        
+        const isLeft = arc.state[0] === 'L';
+        seg.style.backgroundColor = isLeft ? "#0ea5e9" : "#f97316"; // sky-500 : orange-500
+        
+        // 记录元数据用于 Tooltip
+        seg.dataset.state = arc.state;
+        seg.dataset.move = arc.move ? arc.move.name : "滑行";
+        
+        container.appendChild(seg);
+
+        // 如果不是最后一段，添加一个物理分隔线（动作节点）
+        if (idx < arcs.length - 1) {
+            const marker = document.createElement("div");
+            marker.className = "timeline-marker";
+            // 计算当前累积的百分比位置
+            let accumulatedLen = 0;
+            for(let j=0; j<=idx; j++) accumulatedLen += arcs[j].R * Math.abs(arcs[j].endAngle - arcs[j].startAngle);
+            marker.style.left = `${(accumulatedLen / totalLength) * 100}%`;
+            container.appendChild(marker);
+        }
+    });
 }
 
 function toggleAnimation() {
@@ -329,7 +382,11 @@ function toggleAnimation() {
 }
 
 function animationLoop(timestamp) {
-    if (!isAnimating) return;
+    // 如果正在拖拽，跳过自动进度增加，但保持循环以响应外部可能的重绘
+    if (!isAnimating || isDraggingProgress) {
+        if (isAnimating) requestAnimationFrame(animationLoop);
+        return;
+    }
 
     const deltaTime = timestamp - lastAnimTime;
     lastAnimTime = timestamp;
@@ -426,16 +483,26 @@ function initInteraction() {
         const x = e.clientX - rect.left;
         const progress = Math.max(0, Math.min(1, x / rect.width));
         animProgress = progress;
+        // 核心：直接强制触发重绘，不等待下一帧，保证极速跟手
         drawPath();
     };
 
     progressContainer.addEventListener("mousedown", (e) => {
+        isDraggingProgress = true;
         handleProgressJump(e);
-        const onMouseMove = (moveEvent) => handleProgressJump(moveEvent);
+        
+        const onMouseMove = (moveEvent) => {
+            if (isDraggingProgress) handleProgressJump(moveEvent);
+        };
+        
         const onMouseUp = () => {
+            isDraggingProgress = false;
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
+            // 如果是在播放状态下松开，重置最后时间戳防止进度跳变
+            if (isAnimating) lastAnimTime = performance.now();
         };
+        
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });
@@ -448,10 +515,13 @@ function initInteraction() {
         tooltip.style.opacity = "1";
         tooltip.style.left = `${x}px`;
         
-        // 预览内容
-        const stepIdx = Math.floor(hoverProgress * (path.length - 1));
-        const moveName = path[stepIdx]?.move?.name || "结束";
-        tooltip.innerText = `${Math.round(hoverProgress * 100)}% - ${moveName}`;
+        // 基于 DOM 查找实现更精准的 Tooltip
+        const targetSeg = document.elementFromPoint(e.clientX, rect.top + rect.height/2);
+        if (targetSeg && targetSeg.classList.contains('timeline-segment')) {
+            tooltip.innerHTML = `<span class="text-white font-bold">${targetSeg.dataset.state}</span> · ${targetSeg.dataset.move}`;
+        } else {
+            tooltip.innerText = `${Math.round(hoverProgress * 100)}%`;
+        }
     });
 
     progressContainer.addEventListener("mouseleave", () => {

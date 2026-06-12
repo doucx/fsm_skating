@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(web): 实现播放器级别的交互增强（进度拖动、倍速切换、快捷键）", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781237375.1635153, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(web): 升级进度条为语义化“轨迹时间轴”并优化拖拽跟手度", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781237592.3254712, "duration_ms": 0}}

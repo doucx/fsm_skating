@@ -73,6 +73,25 @@ body {
     transform: scale(1.5);
 }
 
+/* 语义化时间轴片段 */
+.timeline-segment {
+    height: 100%;
+    float: left;
+    transition: opacity 0.2s;
+}
+.timeline-segment:hover {
+    filter: brightness(1.2);
+}
+
+.timeline-marker {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.4);
+    z-index: 5;
+}
+
 /* 进度预览 Tooltip */
 #progress-tooltip {
     pointer-events: none;
