@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] feat(ui): implement real-time 2D canvas trajectory rendering", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781229429.6026857, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 重构项目工程目录为领域驱动设计 (DDD) 分层架构", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781229687.4136539, "duration_ms": 0}}
