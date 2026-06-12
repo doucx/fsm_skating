@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 实现核心 FSM 状态模型与编排匹配引擎", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781225534.2554903, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] test: 为 FSM 核心模型与引擎编写单元测试", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781225611.6897764, "duration_ms": 0}}
