@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 增加轨迹流源码导入/导出功能与 JSON 源代码编辑器", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781235419.9849572, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat: 增加轨迹流源码导入/导出功能与 JSON 源代码编辑器", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781235549.098493, "duration_ms": 0}}
