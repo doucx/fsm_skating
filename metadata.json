@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] test: 为状态推导与 DAG 歧义性识别逻辑编写单元测试", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781233970.6187682, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat: 在核心引擎中实现动作驱动的步法序列校验模块", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781234021.7367148, "duration_ms": 0}}

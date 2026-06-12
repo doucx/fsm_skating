@@ -66,6 +66,19 @@ class VerificationResponse(BaseModel):
     is_ambiguous: bool = False
 
 
+class MoveVerificationDetail(BaseModel):
+    from_state: State
+    move: Move
+    to_state: State
+
+
+class MoveVerificationResponse(BaseModel):
+    valid: bool
+    error: Optional[str] = None
+    trace: Optional[List[MoveVerificationDetail]] = None
+    total_difficulty: int = 0
+
+
 class ChoreographyEngine:
     """
     花样滑冰状态机编排与过滤引擎。
@@ -217,6 +230,102 @@ class ChoreographyEngine:
             transitions=transitions_details,
             total_difficulty=total_difficulty,
             is_ambiguous=is_ambiguous,
+        )
+
+    def verify_move_sequence(
+        self, move_ids: List[str], start_state: Optional[State] = None
+    ) -> MoveVerificationResponse:
+        """
+        动作驱动校验器：输入动作 ID 序列，自动演化滑行状态并进行全段物理合法性校验。
+        """
+        if not move_ids:
+            return MoveVerificationResponse(
+                valid=False, error="动作 ID 序列不能为空。"
+            )
+
+        # 缓存配置字典，便于 O(1) 检索
+        move_db = {m["id"]: m for m in self.moves}
+
+        # 确定起始滑行状态
+        current_state = start_state
+        if not current_state:
+            # 尝试推导首个动作的缺省起滑状态
+            first_move_data = move_db.get(move_ids[0])
+            if not first_move_data:
+                return MoveVerificationResponse(
+                    valid=False, error=f"无法识别序列起始处的动作 ID: {move_ids[0]}"
+                )
+            constraints = first_move_data.get("start_constraints", {})
+            dir_c = constraints.get("dir", "F")
+            edge_c = constraints.get("edge", "O")
+            # 缺省选用左脚（L），完全符合标准的编排惯例
+            current_state = State(foot="L", direction=dir_c, edge=edge_c)
+
+        trace_details: List[MoveVerificationDetail] = []
+        total_difficulty = 0
+
+        for idx, move_id in enumerate(move_ids):
+            move_data = move_db.get(move_id)
+            if not move_data:
+                return MoveVerificationResponse(
+                    valid=False,
+                    error=f"在第 {idx + 1} 步检测到未知动作 ID: '{move_id}'",
+                )
+
+            # 1. 起滑方向与用刃约束检查
+            constraints = move_data.get("start_constraints")
+            if constraints:
+                if "dir" in constraints and current_state.direction != constraints["dir"]:
+                    return MoveVerificationResponse(
+                        valid=False,
+                        error=f"第 {idx + 1} 步动作校验失败：动作 '{move_data['name']}' 要求以 '{constraints['dir']}' 向起滑，但当前滑行状态为 '{current_state}'。",
+                    )
+                if "edge" in constraints and current_state.edge != constraints["edge"]:
+                    return MoveVerificationResponse(
+                        valid=False,
+                        error=f"第 {idx + 1} 步动作校验失败：动作 '{move_data['name']}' 要求以 '{constraints['edge']}' 内外刃起滑，但当前滑行状态为 '{current_state}'。",
+                    )
+
+            # 2. 调用第一阶段新引入的状态推导核心演算下一个状态
+            from fsm_skating.domain.models import calculate_next_state, get_natural_curvature
+
+            conditions = move_data["conditions"]
+            next_state = calculate_next_state(current_state, conditions)
+
+            # 3. 推导旋转体的角速度绝对朝向 (CW/CCW)
+            turn_rot = move_data.get("turn_rotation")
+            abs_rot = None
+            if turn_rot == "natural":
+                abs_rot = get_natural_curvature(current_state)
+            elif turn_rot == "opposite":
+                start_curv = get_natural_curvature(current_state)
+                abs_rot = "CW" if start_curv == "CCW" else "CCW"
+
+            move_obj = Move(
+                id=move_data["id"],
+                name=move_data["name"],
+                category=move_data["category"],
+                difficulty=move_data["difficulty"],
+                turn_rotation=move_data.get("turn_rotation"),
+                conditions=move_data["conditions"],
+                start_constraints=move_data.get("start_constraints"),
+                rotation_dir=abs_rot,
+            )
+
+            trace_details.append(
+                MoveVerificationDetail(
+                    from_state=current_state,
+                    move=move_obj,
+                    to_state=next_state,
+                )
+            )
+            total_difficulty += move_obj.difficulty
+            current_state = next_state
+
+        return MoveVerificationResponse(
+            valid=True,
+            trace=trace_details,
+            total_difficulty=total_difficulty,
         )
 
     def generate_sequence(
