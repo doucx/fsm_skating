@@ -106,8 +106,13 @@ def run_interactive(engine: ChoreographyEngine):
     path: List[Tuple[State, Optional[Dict[str, Any]]]] = [(current_state, None)]
 
     while True:
+        from .core import get_natural_curvature
+        curr_curve = get_natural_curvature(current_state)
+        curr_curve_str = "顺时针 ↻" if curr_curve == "CW" else "逆时针 ↺"
+
         print("\n" + "=" * 45)
         print(f"📍 当前滑行状态: {current_state} ({get_state_desc(current_state)})")
+        print(f"🌀 当前滑行弧线: {curr_curve_str}")
         
         # 实时打印已编排路径
         seq_str = " -> ".join([str(s) for s, _ in path])
@@ -122,8 +127,20 @@ def run_interactive(engine: ChoreographyEngine):
             print("⬇️ 可选的下一个动作转移 (已通过排序引擎进行稳定排序):")
             for idx, opt in enumerate(options, 1):
                 nxt = opt["target_state"]
+                nxt_curve = get_natural_curvature(nxt)
+                nxt_curve_str = "↻" if nxt_curve == "CW" else "↺"
+                
                 move = opt["move"]
-                print(f"  [{idx}] ──▶ {nxt} | {move['name']} (难度: {move['difficulty']})")
+                rot_dir = move.get("rotation_dir")
+                
+                rot_info = ""
+                if rot_dir:
+                    rot_sym = "↻" if rot_dir == "CW" else "↺"
+                    rot_info = f" [转体: {rot_sym} -> 下一步弧线: {nxt_curve_str}]"
+                else:
+                    rot_info = f" [下一步弧线: {nxt_curve_str}]"
+
+                print(f"  [{idx}] ──▶ {nxt} | {move['name']}{rot_info} (难度: {move['difficulty']})")
 
         print("-" * 45)
         print("💡 [操作指南]: \n  * 输入候选数字序号，增加下一步动作;\n  * 输入 'u' 撤销上一步动作;\n  * 输入 'e' 结束编排并完美导出。")

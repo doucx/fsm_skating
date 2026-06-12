@@ -1,66 +1,108 @@
-好的，我们已经成功引入了花样滑冰旋转方向的物理推导模型，并实现了基于 ISU 规则的双向旋转均衡度分析。这不仅消除了转三与括弧等动作在物理匹配上的歧义，更为编排提供了极具专业价值的定级指导。
+这是一个非常实用的交互增强建议。在花滑编排中，看清“当前进入弧线的方向”以及“动作产生的转体方向”对于判断动作流向的连贯性至关重要。
 
-现在我将生成 `[COMMIT]` 计划，将这一核心功能增强提交到代码库。
+通过调用我们之前实现的 `get_natural_curvature` 函数，我们可以在 CLI 界面中实时展示：
+1. **当前状态的滑行弧线方向**（进入方向）。
+2. **每个候选动作自身的转体方向**（CW/CCW）。
+3. **完成动作后进入新状态的滑行弧线方向**（退出方向）。
 
-## [COMMIT] feat: 引入绝对旋转方向计算与 ISU 均衡度评估
+下面是增强 CLI 交互体验的实施计划。
+
+## [WIP] style: 增强 CLI 交互界面，实时显示滑行与动作旋转方向
 
 ### 用户需求
-区分滑行中的顺时针 (CW) 与逆时针 (CCW) 旋转，从而精确识别物理转移条件相同但转动极性不同的动作（如转三与括弧、摇滚与计数），并为整套编排提供 ISU 旋转双向均衡度合规性分析。
+在交互式编排的菜单中，实时显示当前状态的滑行弧线方向，并在每个候选动作中明确标识转体方向及其导致的下一步弧线方向。
 
 ### 评论
-此次更新将系统从基础的“动作逻辑库”提升到了“专业竞技辅助工具”的高度。通过力学推导（Curvature + Polarity）实现绝对旋转方向的判定，体现了数学模型与运动力学的完美结合，极大增强了系统的实用价值和专业壁垒。
+这种“可视化”的文本引导能够极大地降低滑冰者在脑中模拟冰面轨迹的认知负担，使得编排过程更像是在玩一个逻辑严密的拼图游戏，同时也更直观地体现了 ISU 规则中“弧线方向切换”的物理本质。
 
 ### 目标
-1. 在核心模型中实现滑行弧线自然弯曲方向的几何推导。
-2. 在动作配置中引入转动极性（Natural/Opposite）标识。
-3. 在匹配引擎中动态注入 CW/CCW 旋转方向。
-4. 在 CLI 中实现基于 ISU 标准的旋转均衡度统计与分析报告。
+1. 修改 `src/fsm_skating/cli.py` 的 `run_interactive` 函数，显示当前弧线方向。
+2. 在候选列表中显示动作的转体方向和目标状态的弧线方向。
 
 ### 基本原理
-利用进入状态的“脚、方向、用刃”组合可以唯一确定进入弧线的物理弯曲方向。通过判定动作是顺着圆弧（Natural）转动还是背离圆弧（Opposite）转动，系统可以严密推导出绝对的 CW/CCW 旋转。这不仅区分了动作歧义，还满足了 ISU 对步法难度定级（Level 1-4）中关于“双向转体均衡性”的核心评价指标。
+- 当前弧线方向 = `get_natural_curvature(current_state)`。
+- 动作转体方向 = `move.get("rotation_dir")`（由引擎计算注入）。
+- 下一步弧线方向 = `get_natural_curvature(target_state)`。
 
 ### 标签
-#intent/build #flow/ready #priority/high 
-#comp/engine #comp/cli #concept/state #scope/core #scope/ux 
-#ai/delegate 
-#task/domain/ui #task/object/rotation-analysis #task/action/integration #task/state/end #task/status/completed
+#intent/tune #flow/ready #priority/medium 
+#comp/cli #concept/ui #scope/ux 
+#ai/delegate
+#task/domain/ui #task/object/command-palette #task/action/refactor #task/state/continue #task/status/active
 
 ---
 
 ### Script
 
-#### Acts 1: 提交旋转方向区分与 ISU 均衡度分析功能
+#### Acts 1: 增强 `src/fsm_skating/cli.py` 交互界面
 
-我们将暂存涉及物理模型、配置库、引擎逻辑、交互界面及测试的所有变更，并执行提交。
+我们将更新 `run_interactive` 中的界面输出逻辑，引入旋转符号标识。
 
 ~~~~~act
-git_add
-src/fsm_skating/core.py
-src/fsm_skating/engine.py
+patch_file
 src/fsm_skating/cli.py
-moves_config.yaml
-tests/test_engine.py
 ~~~~~
-
-~~~~~act
-git_commit
+~~~~~python.old
+    while True:
+        print("\n" + "=" * 45)
+        print(f"📍 当前滑行状态: {current_state} ({get_state_desc(current_state)})")
+        
+        # 实时打印已编排路径
+        seq_str = " -> ".join([str(s) for s, _ in path])
+        print(f"🐾 已完成链路: {seq_str}")
+        
+        # 获取当下合规的转移候选
+        options = engine.get_possible_transitions(current_state, max_difficulty)
+        
+        if not options:
+            print("[-] ⚠️ 警告：当前状态在难度限制下，没有可行转移路径！")
+        else:
+            print("⬇️ 可选的下一个动作转移 (已通过排序引擎进行稳定排序):")
+            for idx, opt in enumerate(options, 1):
+                nxt = opt["target_state"]
+                move = opt["move"]
+                print(f"  [{idx}] ──▶ {nxt} | {move['name']} (难度: {move['difficulty']})")
 ~~~~~
-~~~~~text
-feat: add absolute rotation inference and ISU balance analysis
+~~~~~python.new
+    while True:
+        from .core import get_natural_curvature
+        curr_curve = get_natural_curvature(current_state)
+        curr_curve_str = "顺时针 ↻" if curr_curve == "CW" else "逆时针 ↺"
 
-Introduced a physics-based model to distinguish between Clockwise (CW) and Counter-Clockwise (CCW) rotations.
+        print("\n" + "=" * 45)
+        print(f"📍 当前滑行状态: {current_state} ({get_state_desc(current_state)})")
+        print(f"🌀 当前滑行弧线: {curr_curve_str}")
+        
+        # 实时打印已编排路径
+        seq_str = " -> ".join([str(s) for s, _ in path])
+        print(f"🐾 已完成链路: {seq_str}")
+        
+        # 获取当下合规的转移候选
+        options = engine.get_possible_transitions(current_state, max_difficulty)
+        
+        if not options:
+            print("[-] ⚠️ 警告：当前状态在难度限制下，没有可行转移路径！")
+        else:
+            print("⬇️ 可选的下一个动作转移 (已通过排序引擎进行稳定排序):")
+            for idx, opt in enumerate(options, 1):
+                nxt = opt["target_state"]
+                nxt_curve = get_natural_curvature(nxt)
+                nxt_curve_str = "↻" if nxt_curve == "CW" else "↺"
+                
+                move = opt["move"]
+                rot_dir = move.get("rotation_dir")
+                
+                rot_info = ""
+                if rot_dir:
+                    rot_sym = "↻" if rot_dir == "CW" else "↺"
+                    rot_info = f" [转体: {rot_sym} -> 下一步弧线: {nxt_curve_str}]"
+                else:
+                    rot_info = f" [下一步弧线: {nxt_curve_str}]"
 
-Key improvements:
-- Physical Inference: Added 'get_natural_curvature' to core.py to derive arc direction from state parameters.
-- Disambiguation: Updated moves_config.yaml with 'turn_rotation' (natural vs. opposite) to distinguish Three-turns from Brackets and Rockers from Counters.
-- Data Injection: Enhanced the engine to dynamically compute and inject 'rotation_dir' into matched transitions.
-- ISU Analytics: Added a comprehensive rotation balance report in the CLI, calculating CW/CCW distribution ratios to assist in ISU Level 4 step sequence planning.
-- Testing: Added unit tests to verify the accuracy of rotation direction derivation for complex turns.
-
-This enhancement transforms the FSM from a state transition tracker into a professional skating choreography evaluator.
+                print(f"  [{idx}] ──▶ {nxt} | {move['name']}{rot_info} (难度: {move['difficulty']})")
 ~~~~~
 
 ### 下一步建议
-- **执行验证**: 建议再次运行 `uv run fsm-skating` 并选择“交互式手动编排”，观察导出结果中新增的 `[顺时针 ↻]` / `[逆时针 ↺]` 标识以及结尾的 ISU 均衡度分析。
-- **扩展定级指标**: 未来可以考虑引入“冰面覆盖率”或“身体姿态多样性”的配置项，进一步丰富定级分析的维度。
-- **动作分支**: 现在你可以在 `moves_config.yaml` 中为括弧步等动作添加具体的 `start_constraints`，以进一步细化不同进入方向下的难度分数。
+- **运行验证**: 现在你可以运行 `uv run fsm-skating` 进入第一项功能。你会看到 LBI 状态下，系统会清晰地提示 `🌀 当前滑行弧线: 逆时针 ↺`，并且在选择 `LFO (括弧步)` 时，会明确显示 `[转体: 顺时针 ↻ -> 下一步弧线: 顺时针 ↻]`。
+- **色彩增强**: 如果你的终端支持颜色，未来可以考虑使用 `colorama` 或 `rich` 库为 CW (红色) 和 CCW (蓝色) 着色。
+- **提交变更**: 如果对显示效果满意，我们可以将此 UI 优化进行提交。
