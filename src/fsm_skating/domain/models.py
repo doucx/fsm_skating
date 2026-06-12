@@ -71,3 +71,37 @@ ALL_STATES = [
     State(foot="R", direction="B", edge="O"),
     State(foot="R", direction="B", edge="I"),
 ]
+
+
+def get_opposite_foot(foot: str) -> str:
+    return "R" if foot == "L" else "L"
+
+
+def get_opposite_direction(direction: str) -> str:
+    return "B" if direction == "F" else "F"
+
+
+def get_opposite_edge(edge: str) -> str:
+    return "I" if edge == "O" else "O"
+
+
+def calculate_next_state(current_state: State, conditions: dict) -> State:
+    """
+    根据相对运动物理条件计算并推导下一个滑行状态。
+    """
+    next_foot = (
+        current_state.foot
+        if conditions.get("same_foot", True)
+        else get_opposite_foot(current_state.foot)
+    )
+    next_dir = (
+        current_state.direction
+        if conditions.get("same_dir", True)
+        else get_opposite_direction(current_state.direction)
+    )
+    next_edge = (
+        current_state.edge
+        if conditions.get("same_edge", True)
+        else get_opposite_edge(current_state.edge)
+    )
+    return State(foot=next_foot, direction=next_dir, edge=next_edge)
