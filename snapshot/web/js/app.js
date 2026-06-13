@@ -155,6 +155,8 @@ async function verifySequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-3";
             let listHTML = "";
             data.transitions.forEach((t) => {
+                const fromStr = `${t.from_state.foot}${t.from_state.direction}${t.from_state.edge}`;
+                const toStr = `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`;
                 const rot = t.selected_move.rotation_dir ? ` [${t.selected_move.rotation_dir === 'CW' ? '顺时针' : '逆时针'}]` : "";
                 let candidateHTML = "";
                 if (t.candidate_moves.length > 1) {
@@ -163,7 +165,7 @@ async function verifySequence() {
                 }
                 listHTML += `
                     <div class="text-xs pl-3 border-l border-emerald-800">
-                        <span class="font-bold text-slate-200">${t.from_state} ──▶ ${t.to_state}</span><br/>
+                        <span class="font-bold text-slate-200">${fromStr} ──▶ ${toStr}</span><br/>
                         <span class="text-emerald-400">${t.selected_move.name}${rot}</span> (难度: ${t.selected_move.difficulty})
                         ${candidateHTML}
                     </div>
@@ -218,10 +220,12 @@ async function verifyMovesSequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-3";
             let listHTML = "";
             data.trace.forEach((step) => {
+                const fromStr = `${step.from_state.foot}${step.from_state.direction}${step.from_state.edge}`;
+                const toStr = `${step.to_state.foot}${step.to_state.direction}${step.to_state.edge}`;
                 const rot = step.move.rotation_dir ? ` [${step.move.rotation_dir === 'CW' ? '顺时针' : '逆时针'}]` : "";
                 listHTML += `
                     <div class="text-xs pl-3 border-l border-emerald-800">
-                        <span class="font-bold text-slate-200">${step.from_state} ──▶ ${step.to_state}</span><br/>
+                        <span class="font-bold text-slate-200">${fromStr} ──▶ ${toStr}</span><br/>
                         <span class="text-emerald-400">${step.move.name}${rot}</span> (难度: ${step.move.difficulty})
                     </div>
                 `;
