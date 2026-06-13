@@ -625,6 +625,72 @@ function initInteraction() {
         isDragging = false;
     });
 
+    // --- 移动端触控交互适配 ---
+    let touchStartDist = 0;
+    let touchStartZoom = 1.0;
+
+    canvas.addEventListener("touchstart", (e) => {
+        if (!document.fullscreenElement) return;
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - renderer.panX;
+            startY = e.touches[0].clientY - renderer.panY;
+        } else if (e.touches.length === 2) {
+            isDragging = false;
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            touchStartDist = Math.sqrt(dx * dx + dy * dy);
+            touchStartZoom = renderer.zoomFactor;
+        }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", (e) => {
+        if (!document.fullscreenElement) return;
+        if (e.touches.length === 1 && isDragging) {
+            renderer.panX = e.touches[0].clientX - startX;
+            renderer.panY = e.touches[0].clientY - startY;
+            drawPath();
+            e.preventDefault();
+        } else if (e.touches.length === 2 && touchStartDist > 0) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            const oldZoom = renderer.zoomFactor;
+            renderer.zoomFactor = touchStartZoom * (dist / touchStartDist);
+            renderer.zoomFactor = Math.max(0.1, renderer.zoomFactor);
+
+            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            const ratio = renderer.zoomFactor / oldZoom;
+            renderer.panX = (centerX - cx) - (centerX - cx - renderer.panX) * ratio;
+            renderer.panY = (centerY - cy) - (centerY - cy - renderer.panY) * ratio;
+
+            drawPath();
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", (e) => {
+        if (!document.fullscreenElement) return;
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - renderer.panX;
+            startY = e.touches[0].clientY - renderer.panY;
+        } else {
+            isDragging = false;
+        }
+        touchStartDist = 0;
+    }, { passive: false });
+
+    canvas.addEventListener("touchcancel", () => {
+        isDragging = false;
+        touchStartDist = 0;
+    });
+
     document.addEventListener("fullscreenchange", () => {
         renderer.resetViewport();
         // 移除硬编码宽高设定，转交 ResizeObserver 和 drawPath 动态同步

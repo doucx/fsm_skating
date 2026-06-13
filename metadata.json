@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] fix(web): 移除 API 地址硬编码以实现前端自适应端口", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781333322.333686, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(web): 冰面画布支持全屏模式下的移动端单指平移与双指缩放手势", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781333680.5245166, "duration_ms": 0}}
