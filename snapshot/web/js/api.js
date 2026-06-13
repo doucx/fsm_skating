@@ -1,4 +1,5 @@
-export const API_BASE = "http://127.0.0.1:8000/api";
+// 采用相对路径，自动适配后端实际绑定的 host 与 port
+export const API_BASE = "/api";
 
 export async function fetchTransitions(state, maxDifficulty) {
     const res = await fetch(`${API_BASE}/transitions/${state}?max_difficulty=${maxDifficulty}`);
