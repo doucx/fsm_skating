@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] feat(web): 实现轨迹自动持久化与 UI 同步重构", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781336930.076863, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 重构以解决后端、前端和 CLI 中的 DRY 重复问题", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781337466.946286, "duration_ms": 0}}
