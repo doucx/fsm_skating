@@ -49,9 +49,7 @@ function initChoreography() {
     path = [{ state: startState, move: null }];
     ui.updateCurrStateUI(startState);
     fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true); // 保证起始滑跑状态建立时，第一段滑行弧线就被立即绘制出来，并强制初始化 DOM 时间轴
-    updateTrajectorySourceUI();
+    syncChoreographyUI();
 }
 
 function resetChoreography() {
@@ -84,9 +82,7 @@ function chooseNextMove(nextStateObj, moveObj) {
 
     ui.updateCurrStateUI(nextStateStr);
     fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true);
-    updateTrajectorySourceUI();
+    syncChoreographyUI();
 }
 
 function undoMove() {
@@ -96,9 +92,7 @@ function undoMove() {
     const prevState = path[path.length - 1].state;
     ui.updateCurrStateUI(prevState);
     fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true);
-    updateTrajectorySourceUI();
+    syncChoreographyUI();
 }
 
 let verifyMode = 'state';
@@ -267,9 +261,7 @@ function loadVerifiedPathToCanvas() {
     });
     ui.updateCurrStateUI(path[path.length - 1].state);
     fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true);
-    updateTrajectorySourceUI();
+    syncChoreographyUI();
 }
 
 async function generateSequence() {
@@ -291,9 +283,7 @@ async function generateSequence() {
         const lastState = path[path.length - 1].state;
         ui.updateCurrStateUI(lastState);
         fetchNextTransitions();
-        ui.updateStats(path, undoMove);
-        drawPath(true);
-        updateTrajectorySourceUI();
+        syncChoreographyUI();
     } catch (err) {
         alert(`[-] 生成失败: ${err.message}`);
     }
@@ -721,6 +711,12 @@ function updateTrajectorySourceUI() {
     document.getElementById("trajectory-source").value = JSON.stringify(sourceData);
 }
 
+function syncChoreographyUI() {
+    ui.updateStats(path, undoMove);
+    drawPath(true);
+    updateTrajectorySourceUI();
+}
+
 async function copyTrajectorySource() {
     const text = document.getElementById("trajectory-source").value;
     if (!text) return;
@@ -760,9 +756,7 @@ async function importTrajectorySource() {
             path = [{ state: startState, move: null }];
             ui.updateCurrStateUI(startState);
             fetchNextTransitions();
-            ui.updateStats(path, undoMove);
-            drawPath(true);
-            updateTrajectorySourceUI();
+            syncChoreographyUI();
             return;
         }
 
@@ -800,11 +794,9 @@ async function importTrajectorySource() {
         path = newPath;
         ui.updateCurrStateUI(path[path.length - 1].state);
         fetchNextTransitions();
-        ui.updateStats(path, undoMove);
-        drawPath(true);
-        updateTrajectorySourceUI();
+        syncChoreographyUI();
 
     } catch (err) {
-        alert(`导入解析失败: ${err.message}`);
+        alert(`[-] 导入解析失败: ${err.message}`);
     }
 }

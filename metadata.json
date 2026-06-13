@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] fix(web): 修复步法校验器结果中状态代码显示为 [object Object] 的问题", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781334940.365955, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 消除 web/js/app.js 中重复的 UI 同步逻辑", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781336718.450401, "duration_ms": 0}}
