@@ -19,6 +19,12 @@ document.addEventListener("DOMContentLoaded", () => {
     initChoreography();
     initInteraction();
 
+    // 动态同步当前 API 实际访问端点
+    const apiBadge = document.getElementById("api-endpoint-badge");
+    if (apiBadge) {
+        apiBadge.innerHTML = `<i class="fa-solid fa-server mr-1"></i> API: ${window.location.host}`;
+    }
+
     // 显式挂载动作方法至 window 作用域，确保完美支持 HTML 原生 inline onClick / onChange
     window.initChoreography = initChoreography;
     window.resetChoreography = resetChoreography;
