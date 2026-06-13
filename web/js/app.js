@@ -1,5 +1,5 @@
 import * as api from './api.js';
-import { computeGeometry } from './state.js';
+import { computeGeometry, parseState } from './state.js';
 import { CanvasRenderer } from './canvasRenderer.js';
 import * as ui from './uiController.js';
 
@@ -341,7 +341,7 @@ function updateLinearTimelineUI(geometry) {
         seg.className = "timeline-segment";
         seg.style.width = `${widthPercent}%`;
         
-        const isLeft = arc.state[0] === 'L';
+        const isLeft = parseState(arc.state).isLeft;
         seg.style.backgroundColor = isLeft ? "#0ea5e9" : "#f97316"; // sky-500 : orange-500
         
         // 记录元数据用于 Tooltip
@@ -511,7 +511,7 @@ function initInteraction() {
         // 基于 DOM 查找实现更精准的 Tooltip
         const targetSeg = document.elementFromPoint(e.clientX, rect.top + rect.height/2);
         if (targetSeg && targetSeg.classList.contains('timeline-segment')) {
-            const isLeft = targetSeg.dataset.state[0] === 'L';
+            const isLeft = parseState(targetSeg.dataset.state).isLeft;
             const footText = isLeft ? "左脚" : "右脚";
             const footColor = isLeft ? "text-sky-400" : "text-orange-400";
 

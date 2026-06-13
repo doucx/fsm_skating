@@ -1,4 +1,4 @@
-import { getCurvature } from './state.js';
+import { getCurvature, parseState } from './state.js';
 
 export class CanvasRenderer {
     constructor(canvasId) {
@@ -9,7 +9,7 @@ export class CanvasRenderer {
         this.panY = 0;
     }
 
-    getTransform(nodes) {
+    _getBoundsAndScale(nodes, pad = 35) {
         let minX = Infinity, maxX = -Infinity;
         let minY = Infinity, maxY = -Infinity;
         nodes.forEach(p => {
@@ -19,10 +19,15 @@ export class CanvasRenderer {
             if (p.y > maxY) maxY = p.y;
         });
 
-        const pad = 35;
         const w = maxX - minX || 1;
         const h = maxY - minY || 1;
         const scale = Math.min((this.canvas.width - 2 * pad) / w, (this.canvas.height - 2 * pad) / h, 1.5);
+
+        return { minX, minY, w, h, scale };
+    }
+
+    getTransform(nodes) {
+        const { minX, minY, w, h, scale } = this._getBoundsAndScale(nodes);
 
         const offsetX = (this.canvas.width - w * scale) / 2 - minX * scale;
         const offsetY = (this.canvas.height - h * scale) / 2 - minY * scale;
@@ -58,20 +63,7 @@ export class CanvasRenderer {
         if (nodes.length === 0) return;
 
         const transform = this.getTransform(nodes);
-
-        // 自适应计算 scale 用于线宽自适应
-        let minX = Infinity, maxX = -Infinity;
-        let minY = Infinity, maxY = -Infinity;
-        nodes.forEach(p => {
-            if (p.x < minX) minX = p.x;
-            if (p.x > maxX) maxX = p.x;
-            if (p.y < minY) minY = p.y;
-            if (p.y > maxY) maxY = p.y;
-        });
-        const pad = 35;
-        const w = maxX - minX || 1;
-        const h = maxY - minY || 1;
-        const scale = Math.min((this.canvas.width - 2 * pad) / w, (this.canvas.height - 2 * pad) / h, 1.5);
+        const { scale } = this._getBoundsAndScale(nodes);
 
         // 绘制微光网格冰面质感
         ctx.strokeStyle = "rgba(148, 163, 184, 0.04)";
@@ -101,8 +93,9 @@ export class CanvasRenderer {
             ctx.arc(centerTrans.x, centerTrans.y, scaledR, arc.startAngle, arc.endAngle, arc.anticlockwise);
 
             const progressRatio = (idx + 1) / arcs.length;
-            const isLeft = arc.state[0] === 'L';
-            const isForward = arc.state[1] === 'F';
+            const stateInfo = parseState(arc.state);
+            const isLeft = stateInfo.isLeft;
+            const isForward = stateInfo.isForward;
 
             // 区分双脚：左脚蓝色，右脚橙色
             const baseColor = isLeft ? "56, 189, 248" : "249, 115, 22";
@@ -250,7 +243,7 @@ export class CanvasRenderer {
 
         // 3. 绘制追踪球 (冰晶小球)
         const ctx = this.ctx;
-        const isLeft = targetArc.state[0] === 'L';
+        const isLeft = parseState(targetArc.state).isLeft;
         const ballColor = isLeft ? "56, 189, 248" : "249, 115, 22";
 
         ctx.save();

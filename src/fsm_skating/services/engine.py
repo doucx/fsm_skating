@@ -87,16 +87,18 @@ class ChoreographyEngine:
 
     def __init__(self, config_path: str):
         self.config_path = config_path
-        self.moves = self._load_config()
+        config_data = self._load_config_data()
+        self.moves = config_data.get("moves", [])
+        self.categories = config_data.get("categories", {})
 
-    def _load_config(self) -> List[Dict[str, Any]]:
+    def _load_config_data(self) -> Dict[str, Any]:
         if not os.path.exists(self.config_path):
             raise FileNotFoundError(
                 f"Configuration file not found at: {self.config_path}"
             )
         with open(self.config_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-        return data.get("moves", [])
+        return data if data else {}
 
     def _build_move(self, move_data: Dict[str, Any], current_state: State) -> Move:
         from fsm_skating.domain.models import get_natural_curvature
@@ -347,19 +349,17 @@ class ChoreographyEngine:
         """
         检查动作库中各类别动作的覆盖度 (FO, FI, BO, BI)。
         """
-        with open(self.config_path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-
-        categories = data.get(
-            "categories",
-            {
+        categories = (
+            self.categories
+            if self.categories
+            else {
                 "three_turn": "转三步 (Three-Turn)",
                 "bracket": "括弧步 (Bracket)",
                 "rocker": "摇滚步 (Rocker)",
                 "counter": "计数步 (Counter)",
                 "mohawk": "莫霍克步 (Mohawk)",
                 "choctaw": "乔克陶步 (Choctaw)",
-            },
+            }
         )
 
         required = ["FO", "FI", "BO", "BI"]

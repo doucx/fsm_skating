@@ -1,12 +1,27 @@
+export function parseState(stateStr) {
+    if (!stateStr || stateStr.length !== 3) {
+        return { foot: null, direction: null, edge: null, isLeft: false, isForward: false, isOutside: false };
+    }
+    const foot = stateStr[0];
+    const direction = stateStr[1];
+    const edge = stateStr[2];
+    return {
+        foot,
+        direction,
+        edge,
+        isLeft: foot === 'L',
+        isForward: direction === 'F',
+        isOutside: edge === 'O'
+    };
+}
+
 export function getCurvature(stateStr) {
-    const isL = stateStr[0] === 'L';
-    const isF = stateStr[1] === 'F';
-    const isO = stateStr[2] === 'O';
+    const { isLeft, isForward, isOutside } = parseState(stateStr);
     let isCW = false;
-    if (isL) {
-        isCW = isF ? (!isO) : isO;
+    if (isLeft) {
+        isCW = isForward ? (!isOutside) : isOutside;
     } else {
-        isCW = isF ? isO : (!isO);
+        isCW = isForward ? isOutside : (!isOutside);
     }
     return isCW ? "CW" : "CCW";
 }
