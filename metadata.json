@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "ruff Capture: M engine.py", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781337571.893552, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 解决 Canvas 缩放逻辑重复、类别硬编码，并重构前端用刃状态解析", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781337928.3835485, "duration_ms": 0}}
