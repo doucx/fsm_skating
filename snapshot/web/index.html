@@ -23,7 +23,10 @@
                 </div>
             </div>
             <div class="mt-4 md:mt-0 flex space-x-3 text-xs">
-                <span class="px-3 py-1.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800"><i class="fa-solid fa-server mr-1"></i> API Local: 127.0.0.1:8000</span>
+                <span id="api-status-badge" class="px-3 py-1.5 rounded-full bg-sky-950 text-sky-300 border border-sky-800">
+                    <i class="fa-solid fa-server mr-1"></i> 
+                    API: <span id="api-host-display">Detecting...</span>
+                </span>
                 <span class="px-3 py-1.5 rounded-full bg-teal-950 text-teal-300 border border-teal-800"><i class="fa-solid fa-bolt mr-1"></i> Mode: Canvas UI</span>
             </div>
         </header>

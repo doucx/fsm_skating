@@ -16,6 +16,13 @@ const BASE_ANIM_DURATION = 1500; // 每步滑行基准 1.5 秒
 
 document.addEventListener("DOMContentLoaded", () => {
     renderer = new CanvasRenderer("skate-canvas");
+    
+    // 动态显示当前 API 地址
+    const hostDisplay = document.getElementById("api-host-display");
+    if (hostDisplay) {
+        hostDisplay.innerText = window.location.host;
+    }
+
     initChoreography();
     initInteraction();
 
