@@ -272,7 +272,6 @@ class ChoreographyEngine:
             # 2. 调用第一阶段新引入的状态推导核心演算下一个状态
             from fsm_skating.domain.models import (
                 calculate_next_state,
-                get_natural_curvature,
             )
 
             conditions = move_data["conditions"]
