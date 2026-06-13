@@ -349,14 +349,18 @@ class ChoreographyEngine:
         """
         检查动作库中各类别动作的覆盖度 (FO, FI, BO, BI)。
         """
-        categories = self.categories if self.categories else {
-            "three_turn": "转三步 (Three-Turn)",
-            "bracket": "括弧步 (Bracket)",
-            "rocker": "摇滚步 (Rocker)",
-            "counter": "计数步 (Counter)",
-            "mohawk": "莫霍克步 (Mohawk)",
-            "choctaw": "乔克陶步 (Choctaw)",
-        }
+        categories = (
+            self.categories
+            if self.categories
+            else {
+                "three_turn": "转三步 (Three-Turn)",
+                "bracket": "括弧步 (Bracket)",
+                "rocker": "摇滚步 (Rocker)",
+                "counter": "计数步 (Counter)",
+                "mohawk": "莫霍克步 (Mohawk)",
+                "choctaw": "乔克陶步 (Choctaw)",
+            }
+        )
 
         required = ["FO", "FI", "BO", "BI"]
         report = {}
