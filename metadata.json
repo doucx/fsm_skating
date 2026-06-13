@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(web): 冰面画布支持全屏模式下的移动端单指平移与双指缩放手势", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781333680.5245166, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat(web): 冰面画布适配移动端触控单指平移与双指缩放", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781333768.9479437, "duration_ms": 0}}
