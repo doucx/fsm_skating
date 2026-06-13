@@ -135,5 +135,34 @@ if os.path.exists(web_dir):
 def start():
     """供入口脚本调用，启动 Uvicorn 服务"""
     import uvicorn
+    import argparse
 
-    uvicorn.run("fsm_skating.api.main:app", host="127.0.0.1", port=8000, reload=True)
+    parser = argparse.ArgumentParser(description="❄️ FSM Skating Web 服务启动器")
+    parser.add_argument(
+        "--host", 
+        type=str, 
+        default="127.0.0.1", 
+        help="绑定 IP 地址 (默认: 127.0.0.1)"
+    )
+    parser.add_argument(
+        "--port", 
+        type=int, 
+        default=8000, 
+        help="监听端口 (默认: 8000)"
+    )
+    parser.add_argument(
+        "--no-reload", 
+        action="store_false", 
+        dest="reload", 
+        default=True, 
+        help="禁用热重载模式"
+    )
+    
+    args = parser.parse_args()
+
+    uvicorn.run(
+        "fsm_skating.api.main:app", 
+        host=args.host, 
+        port=args.port, 
+        reload=args.reload
+    )

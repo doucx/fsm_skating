@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] fix(web): 引入 ResizeObserver 彻底解决 Canvas 画面拉伸失真", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781246677.6655788, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(api): 为 Web 服务入口添加 host 与 port 命令行参数支持", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1781332256.311783, "duration_ms": 0}}
