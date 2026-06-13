@@ -1,42 +1,41 @@
-您的观察非常敏锐。
+在完成了 UI 同步逻辑的重构并提炼出 `syncChoreographyUI` 辅助函数之后，引入 LocalStorage 的自动保存和恢复变得异常简单与优雅。
 
-在 `web/js/app.js` 中，那三行代码在多个不同的事件处理与生命周期函数中被完全重复地调用，这的确属于经典的 DRY (Don't Repeat Yourself) 冗余设计。
-为了解决这个问题，我将为您设计并执行一个重构方案，将这三行高频重复的代码统一抽取为一个辅助函数 `syncChoreographyUI()`。这不仅可以消除代码重复、减少文件行数，也使得未来对 UI 同步逻辑的修改和维护变得更为简单。
+因为所有修改路径和状态的事件（手动编排、动作撤销、智能生成路径、源码导入、甚至起始用刃状态改变等）在完成数据变更后，最终都会集中调配 `syncChoreographyUI()` 触发 UI 渲染。因此，我们只需要将持久化钩子注入到该统一出口，并在页面加载时执行逆向的加载重建，即可确保用户在任何修改路径的操作后，数据都能即时存储且不会在页面关闭时丢失。
 
-## [WIP] refactor: 消除 web/js/app.js 中重复的 UI 同步逻辑
+我将为您生成一个完整的计划来引入该 LocalStorage 持久化和恢复机制。
+
+## [WIP] feat: 在 web/js/app.js 中引入基于 LocalStorage 的自动保存与恢复逻辑
 
 ### 用户需求
-识别并消除在 `web/js/app.js` 中多处重复调用的三行 UI 同步代码，以提高代码库的可维护性和整洁度。
+在 FSM 步法编排沙盒前端中实现自动保存与数据恢复机制。在用户执行任何修改路径的操作（包括但不限于选择下一个动作、撤销操作、智能生成路径、导入外部 JSON 源码、甚至起始状态重置等）时，将“轨迹流向”实时持久化至浏览器的 LocalStorage 中。当用户关闭网页并重新打开时，系统能自动恢复上一滑行会话的未完结编排。
 
 ### 评论
-这是一个对代码库质量非常有益的重构建议。在手动编排、撤销、验证路径载入、生成和导入逻辑中，都出现了这三行相同的调用。这种重复不仅显得臃肿，而且一旦未来需要扩展状态更新步骤（例如加入日志、保存草稿），就需要修改所有这些分布的位置，极易引入不一致的问题。重构后，所有的状态同步调用都将收拢到单一函数。
+这个设计能大幅提升用户体验 (UX)。在此前的重构中，我们已经将所有路径变更相关的 UI 同步操作合并到了统一的 `syncChoreographyUI` 辅助函数中。将 LocalStorage 的持久化调用直接置于该函数内，可以达到“一次修改、全线生效”的效果，完美避免了在各个修改路径操作的子函数里零散调用 LocalStorage 的混乱设计。
 
 ### 目标
-1. 在 `web/js/app.js` 中定义一个公共的辅助同步函数 `syncChoreographyUI`，封装以下三步调用：
-   - `ui.updateStats(path, undoMove);`
-   - `drawPath(true);`
-   - `updateTrajectorySourceUI();`
-2. 替换文件中共计 7 处冗余的重复代码段。
-3. 确保功能不发生任何倒退，依然维持页面加载、编排、回滚、导入导出时的逻辑完全正确。
+1. 定义持久化写入辅助函数 `saveToLocalStorage`，将全局 `path` 数组序列化并存储至 LocalStorage（键名定为 `"fsm_skating_path"`）。
+2. 在 `syncChoreographyUI` 结束前，追加对 `saveToLocalStorage` 的调用。
+3. 定义恢复数据读取辅助函数 `loadFromLocalStorage`，在页面首屏加载时解析已存储的 path JSON，恢复 `path` 变量的值，同步将起始选择框 `start-state-select` 恢复至路径起点用刃状态，并调用 `syncChoreographyUI` 重绘冰面轨迹。
+4. 修改页面生命周期的 `DOMContentLoaded` 入口，优先尝试从 LocalStorage 恢复，恢复失败时才降级为使用缺省的 `initChoreography`。
 
 ### 基本原理
-由于此重构不涉及物理模型逻辑改变，仅影响前端界面的刷新触发，将该公共部分抽取为 `syncChoreographyUI` 是最直接有效的方法。通过局部精确替换 (Patch) 的方式对 `web/js/app.js` 进行修改。
+利用 HTML5 规范中现代浏览器均支持的 `window.localStorage` 进行离线持久化存储。使用 `JSON.stringify` 与 `JSON.parse` 对复杂类型（对象数组 `path`）进行序列化与反序列化，通过精简的 Hook 设计嵌入在我们之前重构的统一管道函数中，确保行为的确定性和零状态遗漏。
 
 ### 标签
-#intent/refine #flow/ready #priority/medium #concept/ui #scope/dx #ai/refine
+#intent/build #flow/ready #priority/medium #concept/ui #scope/ux #ai/refine
 #task/domain/ui
-#task/object/ui-choreography-sync
-#task/action/refactor
-#task/state/begin
+#task/object/ui-auto-save
+#task/action/implementation
+#task/state/continue
 #task/status/active
 
 ---
 
 ### Script
 
-#### Acts 1: 定义并注册辅助同步函数
+#### Acts 1: 在 `web/js/app.js` 中注入自动保存与数据恢复辅助函数
 
-在 `updateTrajectorySourceUI` 之后声明并定义公共方法 `syncChoreographyUI`。
+我们将扩展 `syncChoreographyUI` 并在其下方声明 `saveToLocalStorage` 与 `loadFromLocalStorage`。
 
 ~~~~~act
 patch_file
@@ -49,6 +48,12 @@ function updateTrajectorySourceUI() {
         move_id: step.move ? step.move.id : null
     }));
     document.getElementById("trajectory-source").value = JSON.stringify(sourceData);
+}
+
+function syncChoreographyUI() {
+    ui.updateStats(path, undoMove);
+    drawPath(true);
+    updateTrajectorySourceUI();
 }
 ~~~~~
 ~~~~~javascript.new
@@ -64,234 +69,80 @@ function syncChoreographyUI() {
     ui.updateStats(path, undoMove);
     drawPath(true);
     updateTrajectorySourceUI();
+    saveToLocalStorage();
 }
-~~~~~
 
-#### Acts 2: 替换 `initChoreography` 中的重复代码
-
-替换手动编排初始化处的冗余代码。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-function initChoreography() {
-    const startState = document.getElementById("start-state-select").value;
-    path = [{ state: startState, move: null }];
-    ui.updateCurrStateUI(startState);
-    fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true); // 保证起始滑跑状态建立时，第一段滑行弧线就被立即绘制出来，并强制初始化 DOM 时间轴
-    updateTrajectorySourceUI();
-}
-~~~~~
-~~~~~javascript.new
-function initChoreography() {
-    const startState = document.getElementById("start-state-select").value;
-    path = [{ state: startState, move: null }];
-    ui.updateCurrStateUI(startState);
-    fetchNextTransitions();
-    syncChoreographyUI();
-}
-~~~~~
-
-#### Acts 3: 替换 `chooseNextMove` 中的重复代码
-
-替换推荐选择分支处理处的冗余代码。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-function chooseNextMove(nextStateObj, moveObj) {
-    path[path.length - 1].move = moveObj;
-    const nextStateStr = `${nextStateObj.foot}${nextStateObj.direction}${nextStateObj.edge}`;
-    path.push({ state: nextStateStr, move: null });
-
-    ui.updateCurrStateUI(nextStateStr);
-    fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true);
-    updateTrajectorySourceUI();
-}
-~~~~~
-~~~~~javascript.new
-function chooseNextMove(nextStateObj, moveObj) {
-    path[path.length - 1].move = moveObj;
-    const nextStateStr = `${nextStateObj.foot}${nextStateObj.direction}${nextStateObj.edge}`;
-    path.push({ state: nextStateStr, move: null });
-
-    ui.updateCurrStateUI(nextStateStr);
-    fetchNextTransitions();
-    syncChoreographyUI();
-}
-~~~~~
-
-#### Acts 4: 替换 `undoMove` 中的重复代码
-
-替换回滚动作处理处的冗余代码。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-function undoMove() {
-    if (path.length <= 1) return;
-    path.pop();
-    path[path.length - 1].move = null;
-    const prevState = path[path.length - 1].state;
-    ui.updateCurrStateUI(prevState);
-    fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true);
-    updateTrajectorySourceUI();
-}
-~~~~~
-~~~~~javascript.new
-function undoMove() {
-    if (path.length <= 1) return;
-    path.pop();
-    path[path.length - 1].move = null;
-    const prevState = path[path.length - 1].state;
-    ui.updateCurrStateUI(prevState);
-    fetchNextTransitions();
-    syncChoreographyUI();
-}
-~~~~~
-
-#### Acts 5: 替换 `loadVerifiedPathToCanvas` 中的重复代码
-
-替换载入验证路径到画布处的冗余代码。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-function loadVerifiedPathToCanvas() {
-    if (!window.verifiedPathData || !window.verifiedInitialState) return;
-    path = [{ state: window.verifiedInitialState, move: null }];
-    window.verifiedPathData.forEach(step => {
-        path[path.length - 1].move = step.move;
-        path.push({ state: step.state, move: null });
-    });
-    ui.updateCurrStateUI(path[path.length - 1].state);
-    fetchNextTransitions();
-    ui.updateStats(path, undoMove);
-    drawPath(true);
-    updateTrajectorySourceUI();
-}
-~~~~~
-~~~~~javascript.new
-function loadVerifiedPathToCanvas() {
-    if (!window.verifiedPathData || !window.verifiedInitialState) return;
-    path = [{ state: window.verifiedInitialState, move: null }];
-    window.verifiedPathData.forEach(step => {
-        path[path.length - 1].move = step.move;
-        path.push({ state: step.state, move: null });
-    });
-    ui.updateCurrStateUI(path[path.length - 1].state);
-    fetchNextTransitions();
-    syncChoreographyUI();
-}
-~~~~~
-
-#### Acts 6: 替换 `generateSequence` 中的重复代码
-
-替换智能路径生成完成处的冗余代码。
-
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-        const lastState = path[path.length - 1].state;
-        ui.updateCurrStateUI(lastState);
-        fetchNextTransitions();
-        ui.updateStats(path, undoMove);
-        drawPath(true);
-        updateTrajectorySourceUI();
-    } catch (err) {
-        alert(`[-] 生成失败: ${err.message}`);
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem("fsm_skating_path", JSON.stringify(path));
+    } catch (e) {
+        console.error("Failed to save path to LocalStorage:", e);
     }
 }
-~~~~~
-~~~~~javascript.new
-        const lastState = path[path.length - 1].state;
-        ui.updateCurrStateUI(lastState);
-        fetchNextTransitions();
-        syncChoreographyUI();
-    } catch (err) {
-        alert(`[-] 生成失败: ${err.message}`);
-    }
-}
-~~~~~
 
-#### Acts 7: 替换 `importTrajectorySource` 中的两处重复代码
-
-替换导入轨迹源码处的两个重复逻辑段。
-
-第一处：
-~~~~~act
-patch_file
-web/js/app.js
-~~~~~
-~~~~~javascript.old
-        if (statesList.length === 1) {
-            const startState = statesList[0];
-            path = [{ state: startState, move: null }];
-            ui.updateCurrStateUI(startState);
-            fetchNextTransitions();
-            ui.updateStats(path, undoMove);
-            drawPath(true);
-            updateTrajectorySourceUI();
-            return;
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem("fsm_skating_path");
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                path = parsed;
+                // 将 start-state-select 同步为 path[0].state
+                const startSelect = document.getElementById("start-state-select");
+                if (startSelect && path[0]) {
+                    startSelect.value = path[0].state;
+                }
+                const lastState = path[path.length - 1].state;
+                ui.updateCurrStateUI(lastState);
+                fetchNextTransitions();
+                syncChoreographyUI();
+                return true;
+            }
+        } catch (e) {
+            console.error("Failed to restore path from LocalStorage:", e);
         }
-~~~~~
-~~~~~javascript.new
-        if (statesList.length === 1) {
-            const startState = statesList[0];
-            path = [{ state: startState, move: null }];
-            ui.updateCurrStateUI(startState);
-            fetchNextTransitions();
-            syncChoreographyUI();
-            return;
-        }
+    }
+    return false;
+}
 ~~~~~
 
-第二处：
+#### Acts 2: 调整 `DOMContentLoaded` 生命周期钩子以引入恢复流程
+
+重写 `DOMContentLoaded` 处的挂载和启动声明，优先执行来自本地存储的状态链路恢复。
+
 ~~~~~act
 patch_file
 web/js/app.js
 ~~~~~
 ~~~~~javascript.old
-        path = newPath;
-        ui.updateCurrStateUI(path[path.length - 1].state);
-        fetchNextTransitions();
-        ui.updateStats(path, undoMove);
-        drawPath(true);
-        updateTrajectorySourceUI();
+document.addEventListener("DOMContentLoaded", () => {
+    renderer = new CanvasRenderer("skate-canvas");
+    initChoreography();
+    initInteraction();
 
-    } catch (err) {
-        alert(`导入解析失败: ${err.message}`);
-    }
-}
+    // 动态同步当前 API 实际访问端点
 ~~~~~
 ~~~~~javascript.new
-        path = newPath;
-        ui.updateCurrStateUI(path[path.length - 1].state);
-        fetchNextTransitions();
-        syncChoreographyUI();
-
-    } catch (err) {
-        alert(`[-] 导入解析失败: ${err.message}`);
+document.addEventListener("DOMContentLoaded", () => {
+    renderer = new CanvasRenderer("skate-canvas");
+    
+    // 优先尝试从 LocalStorage 恢复，失败则调用 initChoreography 重新初始化
+    const loaded = loadFromLocalStorage();
+    if (!loaded) {
+        initChoreography();
     }
-}
+    
+    initInteraction();
+
+    // 动态同步当前 API 实际访问端点
 ~~~~~
+
+---
 
 ### 下一步建议
-1. 建议在浏览器中加载并刷新该应用，验证手动编排、分支跳转、动作撤销、以及一键生成逻辑，确认画布轨迹正常重绘。
-2. 确认其没有引入功能性回归后，可通过 Git 进行后续归档和提交。
+1. **交互验证**: 
+   - 打开沙盒网页并执行几步滑行编排。
+   - 检查 `trajectory-source` 内是否有更新。
+   - 刷新网页，检查编排流、转体平衡度分析、画布轨迹是否正确复现、起始状态下拉框选中状态是否自动同步为历史首节点。
+   - 点击“重置编排”，刷新网页，检查状态是否如期回到只有单一起滑用刃状态的环境。
+2. **提交版本**: 验证没有功能故障后，将所有变更暂存、提交，并合并到 Git 仓库。

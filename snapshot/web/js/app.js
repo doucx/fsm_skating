@@ -16,7 +16,13 @@ const BASE_ANIM_DURATION = 1500; // 每步滑行基准 1.5 秒
 
 document.addEventListener("DOMContentLoaded", () => {
     renderer = new CanvasRenderer("skate-canvas");
-    initChoreography();
+    
+    // 优先尝试从 LocalStorage 恢复，失败则调用 initChoreography 重新初始化
+    const loaded = loadFromLocalStorage();
+    if (!loaded) {
+        initChoreography();
+    }
+    
     initInteraction();
 
     // 动态同步当前 API 实际访问端点
@@ -715,6 +721,40 @@ function syncChoreographyUI() {
     ui.updateStats(path, undoMove);
     drawPath(true);
     updateTrajectorySourceUI();
+    saveToLocalStorage();
+}
+
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem("fsm_skating_path", JSON.stringify(path));
+    } catch (e) {
+        console.error("Failed to save path to LocalStorage:", e);
+    }
+}
+
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem("fsm_skating_path");
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                path = parsed;
+                // 将 start-state-select 同步为 path[0].state
+                const startSelect = document.getElementById("start-state-select");
+                if (startSelect && path[0]) {
+                    startSelect.value = path[0].state;
+                }
+                const lastState = path[path.length - 1].state;
+                ui.updateCurrStateUI(lastState);
+                fetchNextTransitions();
+                syncChoreographyUI();
+                return true;
+            }
+        } catch (e) {
+            console.error("Failed to restore path from LocalStorage:", e);
+        }
+    }
+    return false;
 }
 
 async function copyTrajectorySource() {
