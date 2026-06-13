@@ -9,20 +9,7 @@ export class CanvasRenderer {
         this.panY = 0;
     }
 
-    resetViewport() {
-        this.zoomFactor = 1.0;
-        this.panX = 0;
-        this.panY = 0;
-    }
-
-    draw(geometry) {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        const { nodes, arcs } = geometry;
-        if (nodes.length === 0) return;
-
-        // 自适应计算包围盒
+    getTransform(nodes) {
         let minX = Infinity, maxX = -Infinity;
         let minY = Infinity, maxY = -Infinity;
         nodes.forEach(p => {
@@ -40,7 +27,7 @@ export class CanvasRenderer {
         const offsetX = (this.canvas.width - w * scale) / 2 - minX * scale;
         const offsetY = (this.canvas.height - h * scale) / 2 - minY * scale;
 
-        const transform = (px, py) => {
+        return (px, py) => {
             const ax = px * scale + offsetX;
             const ay = py * scale + offsetY;
             
@@ -55,6 +42,36 @@ export class CanvasRenderer {
                 y: (ay - cy) * this.zoomFactor + cy + this.panY
             };
         };
+    }
+
+    resetViewport() {
+        this.zoomFactor = 1.0;
+        this.panX = 0;
+        this.panY = 0;
+    }
+
+    draw(geometry) {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const { nodes, arcs } = geometry;
+        if (nodes.length === 0) return;
+
+        const transform = this.getTransform(nodes);
+
+        // 自适应计算 scale 用于线宽自适应
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        nodes.forEach(p => {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        });
+        const pad = 35;
+        const w = maxX - minX || 1;
+        const h = maxY - minY || 1;
+        const scale = Math.min((this.canvas.width - 2 * pad) / w, (this.canvas.height - 2 * pad) / h, 1.5);
 
         // 绘制微光网格冰面质感
         ctx.strokeStyle = "rgba(148, 163, 184, 0.04)";
@@ -199,9 +216,11 @@ export class CanvasRenderer {
         ctx.fill();
     }
 
-    drawTracker(geometry, progress, transform, fFactor) {
-        const { arcs } = geometry;
+    drawTracker(geometry, progress, fFactor) {
+        const { arcs, nodes } = geometry;
         if (!arcs || arcs.length === 0) return null;
+
+        const transform = this.getTransform(nodes);
 
         // 1. 根据总弧长计算当前 progress 落在哪个 arc 上
         const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);

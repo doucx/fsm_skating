@@ -428,37 +428,10 @@ function animationLoop(timestamp) {
 }
 
 function renderAnimationStep(geometry) {
-    // 这里的 transform 逻辑需要与 renderer.draw 内部一致，故我们可以重构 renderer 以暴露获取 transform 的方法
-    // 但为简化实现，我们直接让 renderer.draw 返回其内部闭包计算出的坐标转换函数，或者由 renderer 托管。
-    // 在本实现中，我们直接在 draw 函数结束后调用 drawTracker。
-    
-    const pad = 35;
-    const canvas = renderer.canvas;
-    const { nodes } = geometry;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    nodes.forEach(p => {
-        if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
-        if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
-    });
-    const w = maxX - minX || 1; const h = maxY - minY || 1;
-    const scale = Math.min((canvas.width - 2 * pad) / w, (canvas.height - 2 * pad) / h, 1.5);
-    const offsetX = (canvas.width - w * scale) / 2 - minX * scale;
-    const offsetY = (canvas.height - h * scale) / 2 - minY * scale;
-
-    const transform = (px, py) => {
-        const ax = px * scale + offsetX; const ay = py * scale + offsetY;
-        if (!document.fullscreenElement) return { x: ax, y: ay };
-        const cx = canvas.width / 2; const cy = canvas.height / 2;
-        return {
-            x: (ax - cx) * renderer.zoomFactor + cx + renderer.panX,
-            y: (ay - cy) * renderer.zoomFactor + cy + renderer.panY
-        };
-    };
-
     const fFactor = document.fullscreenElement ? renderer.zoomFactor : 1.0;
     
     // 执行绘制并获取当前位置的状态信息
-    const info = renderer.drawTracker(geometry, animProgress, transform, fFactor);
+    const info = renderer.drawTracker(geometry, animProgress, fFactor);
     
     if (info) {
         // 1. 刚刚的动作

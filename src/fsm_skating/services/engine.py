@@ -98,6 +98,29 @@ class ChoreographyEngine:
             data = yaml.safe_load(f)
         return data.get("moves", [])
 
+    def _build_move(self, move_data: Dict[str, Any], current_state: State) -> Move:
+        from fsm_skating.domain.models import get_natural_curvature
+
+        turn_rot = move_data.get("turn_rotation")
+        abs_rot = None
+        if turn_rot == "natural":
+            abs_rot = get_natural_curvature(current_state)
+        elif turn_rot == "opposite":
+            start_curv = get_natural_curvature(current_state)
+            abs_rot = "CW" if start_curv == "CCW" else "CCW"
+
+        return Move(
+            id=move_data["id"],
+            name=move_data["name"],
+            category=move_data["category"],
+            difficulty=move_data["difficulty"],
+            turn_rotation=move_data.get("turn_rotation"),
+            conditions=move_data["conditions"],
+            start_constraints=move_data.get("start_constraints"),
+            rotation_dir=abs_rot,
+            geometry_config=move_data.get("geometry_config"),
+        )
+
     def get_possible_transitions(
         self, current_state: State, max_difficulty: int = 999
     ) -> List[MoveOption]:
@@ -114,31 +137,7 @@ class ChoreographyEngine:
                 if check_match(current_state, target_state, move_data):
                     diff = move_data.get("difficulty", 0)
                     if diff <= max_difficulty:
-                        turn_rot = move_data.get("turn_rotation")
-                        abs_rot = None
-                        if turn_rot == "natural":
-                            from fsm_skating.domain.models import get_natural_curvature
-
-                            abs_rot = get_natural_curvature(current_state)
-                        elif turn_rot == "opposite":
-                            from fsm_skating.domain.models import get_natural_curvature
-
-                            start_curv = get_natural_curvature(current_state)
-                            abs_rot = "CW" if start_curv == "CCW" else "CCW"
-
-                        move_obj = Move(
-                            id=move_data["id"],
-                            name=move_data["name"],
-                            category=move_data["category"],
-                            difficulty=move_data["difficulty"],
-                            turn_rotation=move_data.get("turn_rotation"),
-                            conditions=move_data["conditions"],
-                            start_constraints=move_data.get("start_constraints"),
-                            rotation_dir=abs_rot,
-                            geometry_config=move_data.get(
-                                "geometry_config"
-                            ),  # 动态装配
-                        )
+                        move_obj = self._build_move(move_data, current_state)
 
                         results.append(
                             MoveOption(target_state=target_state, move=move_obj)
@@ -184,29 +183,7 @@ class ChoreographyEngine:
             matched_moves: List[Move] = []
             for move_data in self.moves:
                 if check_match(s_from, s_to, move_data):
-                    turn_rot = move_data.get("turn_rotation")
-                    abs_rot = None
-                    if turn_rot == "natural":
-                        from fsm_skating.domain.models import get_natural_curvature
-
-                        abs_rot = get_natural_curvature(s_from)
-                    elif turn_rot == "opposite":
-                        from fsm_skating.domain.models import get_natural_curvature
-
-                        start_curv = get_natural_curvature(s_from)
-                        abs_rot = "CW" if start_curv == "CCW" else "CCW"
-
-                    move_obj = Move(
-                        id=move_data["id"],
-                        name=move_data["name"],
-                        category=move_data["category"],
-                        difficulty=move_data["difficulty"],
-                        turn_rotation=move_data.get("turn_rotation"),
-                        conditions=move_data["conditions"],
-                        start_constraints=move_data.get("start_constraints"),
-                        rotation_dir=abs_rot,
-                        geometry_config=move_data.get("geometry_config"),  # 动态装配
-                    )
+                    move_obj = self._build_move(move_data, s_from)
                     matched_moves.append(move_obj)
 
             if not matched_moves:
@@ -295,32 +272,13 @@ class ChoreographyEngine:
             # 2. 调用第一阶段新引入的状态推导核心演算下一个状态
             from fsm_skating.domain.models import (
                 calculate_next_state,
-                get_natural_curvature,
             )
 
             conditions = move_data["conditions"]
             next_state = calculate_next_state(current_state, conditions)
 
-            # 3. 推导旋转体的角速度绝对朝向 (CW/CCW)
-            turn_rot = move_data.get("turn_rotation")
-            abs_rot = None
-            if turn_rot == "natural":
-                abs_rot = get_natural_curvature(current_state)
-            elif turn_rot == "opposite":
-                start_curv = get_natural_curvature(current_state)
-                abs_rot = "CW" if start_curv == "CCW" else "CCW"
-
-            move_obj = Move(
-                id=move_data["id"],
-                name=move_data["name"],
-                category=move_data["category"],
-                difficulty=move_data["difficulty"],
-                turn_rotation=move_data.get("turn_rotation"),
-                conditions=move_data["conditions"],
-                start_constraints=move_data.get("start_constraints"),
-                rotation_dir=abs_rot,
-                geometry_config=move_data.get("geometry_config"),  # 动态装配
-            )
+            # 3. 统一推导旋转体并构建 Move 对象
+            move_obj = self._build_move(move_data, current_state)
 
             trace_details.append(
                 MoveVerificationDetail(
