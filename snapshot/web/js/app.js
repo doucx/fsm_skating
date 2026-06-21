@@ -843,7 +843,8 @@ async function searchPaths() {
             const trailHTML = ui.renderPathTrailHTML(p, true);
 
             const card = document.createElement("div");
-            card.className = "bg-slate-900/60 border border-slate-850 hover:border-sky-500/30 p-4 rounded-xl flex flex-col space-y-3 transition group";
+            // 优化：默认使用更清晰的 slate-800 边框，Hover 时变为 sky 亮色、微蓝背景及软辉光阴影
+            card.className = "bg-slate-900/60 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-3 transition-all duration-300 group";
             
             card.innerHTML = `
                 <div class="flex justify-between items-center">
