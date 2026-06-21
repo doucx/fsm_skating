@@ -1,4 +1,4 @@
-import { getCurvature, parseState } from './state.js';
+import { getCurvature, parseState, getArcProgressInfo } from './state.js';
 
 export class CanvasRenderer {
     constructor(canvasId) {
@@ -85,12 +85,15 @@ export class CanvasRenderer {
 
         // 绘制连续滑行圆弧段 (Arcs = States)
         arcs.forEach((arc, idx) => {
-            const centerTrans = transform(arc.cx, arc.cy);
-            const scaledR = arc.R * scale * fFactor;
-
             ctx.save();
             ctx.beginPath();
-            ctx.arc(centerTrans.x, centerTrans.y, scaledR, arc.startAngle, arc.endAngle, arc.anticlockwise);
+            
+            // 采用离散折线平滑绘制欧拉螺线
+            arc.points.forEach((pt, pIdx) => {
+                const trans = transform(pt.x, pt.y);
+                if (pIdx === 0) ctx.moveTo(trans.x, trans.y);
+                else ctx.lineTo(trans.x, trans.y);
+            });
 
             const progressRatio = (idx + 1) / arcs.length;
             const stateInfo = parseState(arc.state);
@@ -114,19 +117,18 @@ export class CanvasRenderer {
             ctx.stroke();
             ctx.restore();
 
-            // 绘制用刃状态名称 (如 LFO, LBI) 于弧线几何中点
-            const midAngle = arc.startAngle + (arc.endAngle - arc.startAngle) * 0.5;
-            const mx = centerTrans.x + scaledR * Math.cos(midAngle);
-            const my = centerTrans.y + scaledR * Math.sin(midAngle);
+            // 获取积分中点位置与切向
+            const midInfo = getArcProgressInfo(arc, 0.5);
+            const midTrans = transform(midInfo.x, midInfo.y);
 
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${Math.round(11 * fFactor)}px monospace`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(arc.state, mx, my - 10 * fFactor);
+            ctx.fillText(arc.state, midTrans.x, midTrans.y - 10 * fFactor);
 
             // 绘制滑行轨迹行进切方向箭头
-            this._drawArrow(ctx, transform, arc, midAngle, isLeft, fFactor);
+            this._drawArrow(ctx, transform, arc, midInfo, isLeft, fFactor);
         });
 
         // 绘制动作转换节点 (Nodes = Moves)
@@ -182,13 +184,10 @@ export class CanvasRenderer {
         });
     }
 
-    _drawArrow(ctx, transform, arc, midAngle, isLeft, fFactor) {
-        const worldMx = arc.cx + arc.R * Math.cos(midAngle);
-        const worldMy = arc.cy + arc.R * Math.sin(midAngle);
-        const pMid = transform(worldMx, worldMy);
-
-        const midK = arc.anticlockwise ? -1 : 1;
-        const arrowAngle = Math.atan2(midK * Math.cos(midAngle), -midK * Math.sin(midAngle));
+    _drawArrow(ctx, transform, arc, midInfo, isLeft, fFactor) {
+        const pMid = transform(midInfo.x, midInfo.y);
+        // 直接使用数值积分导出的行进方向 theta 作为箭头偏向角
+        const arrowAngle = midInfo.theta;
 
         const arrowLength = 9 * fFactor;
         const arrowWidth = 5 * fFactor;
@@ -215,8 +214,8 @@ export class CanvasRenderer {
 
         const transform = this.getTransform(nodes);
 
-        // 1. 根据总弧长计算当前 progress 落在哪个 arc 上
-        const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+        // 1. 根据总积分长度计算当前 progress 落在哪个 arc 上
+        const totalLength = arcs.reduce((acc, arc) => acc + arc.length, 0);
         let targetLen = totalLength * progress;
         let currentLen = 0;
         let targetArc = arcs[arcs.length - 1];
@@ -225,21 +224,18 @@ export class CanvasRenderer {
         let targetIdx = arcs.length - 1;
         for (let i = 0; i < arcs.length; i++) {
             const arc = arcs[i];
-            const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
-            if (currentLen + arcLen >= targetLen) {
+            if (currentLen + arc.length >= targetLen) {
                 targetArc = arc;
                 targetIdx = i;
-                localProgress = (targetLen - currentLen) / arcLen;
+                localProgress = (targetLen - currentLen) / arc.length;
                 break;
             }
-            currentLen += arcLen;
+            currentLen += arc.length;
         }
 
-        // 2. 计算插值坐标
-        const currentAngle = targetArc.startAngle + (targetArc.endAngle - targetArc.startAngle) * localProgress;
-        const worldX = targetArc.cx + targetArc.R * Math.cos(currentAngle);
-        const worldY = targetArc.cy + targetArc.R * Math.sin(currentAngle);
-        const pos = transform(worldX, worldY);
+        // 2. 利用数值积分辅助函数计算精确插值坐标
+        const posInfo = getArcProgressInfo(targetArc, localProgress);
+        const pos = transform(posInfo.x, posInfo.y);
 
         // 3. 绘制追踪球 (冰晶小球)
         const ctx = this.ctx;

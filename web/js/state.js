@@ -27,8 +27,34 @@ export function getCurvature(stateStr) {
 }
 
 /**
+ * 高级物理几何插值函数：根据局部进度 s (0-1) 获取欧拉螺线上的坐标与切向角
+ */
+export function getArcProgressInfo(arc, s) {
+    const points = arc.points;
+    const totalSegments = points.length - 1;
+    const rawIdx = s * totalSegments;
+    const idx = Math.floor(rawIdx);
+    const frac = rawIdx - idx;
+
+    if (idx >= totalSegments) {
+        return points[totalSegments];
+    }
+
+    const p0 = points[idx];
+    const p1 = points[idx + 1];
+
+    const interpX = p0.x + (p1.x - p0.x) * frac;
+    const interpY = p0.y + (p1.y - p0.y) * frac;
+    
+    // 角度积分过程中是连续的，直接线性插值
+    const interpTheta = p0.theta + (p1.theta - p0.theta) * frac;
+
+    return { x: interpX, y: interpY, theta: interpTheta };
+}
+
+/**
  * 核心几何变换：把 path 路径转换为可独立渲染的物理数据
- * 已针对 HTML Canvas Y轴向下（y-down）坐标系进行了数学投影纠正
+ * 已升级为数值积分算法，模拟向心力与摩擦力导致的半径衰减收敛轨迹（欧拉螺线）
  */
 export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
     if (!pathData || pathData.length === 0) return { nodes: [], arcs: [] };
@@ -48,6 +74,10 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
         state: pathData[0].state
     });
 
+    // 欧拉螺线物理参数
+    const DECAY_COEFF = 0.18;       // 滑跑摩擦半径衰减系数 (18% 收敛)
+    const INTEGRATION_STEPS = 40;   // 数值积分步数
+
     for (let i = 0; i < pathData.length; i++) {
         const step = pathData[i];
         const stateStr = step.state;
@@ -63,39 +93,37 @@ export function computeGeometry(pathData, R = 50, sweepAngle = Math.PI * 0.65) {
         const curve = getCurvature(stateStr);
         const K = (curve === "CW") ? -1 : 1; // 1: CCW (左偏), -1: CW (右偏)
 
-        // ===== 针对 Canvas Y轴向下坐标系的物理公式修正 =====
-        // 1. 纠正圆心计算公式
-        const cx = x + K * currentR * Math.sin(theta);
-        const cy = y - K * currentR * Math.cos(theta);
+        // ===== 采用数值积分演化欧拉螺线轨迹 (确保 G1 连续性) =====
+        const points = [];
+        points.push({ x, y, theta });
 
-        // 2. 纠正张角偏转方向
-        const startAngle = Math.atan2(y - cy, x - cx);
-        const sweep = -K * currentSweepAngle; // CCW角度减小，CW角度增加
-        const endAngle = startAngle + sweep;
+        const dPhi = currentSweepAngle / INTEGRATION_STEPS;
+        let arcLength = 0;
 
-        const nextX = cx + currentR * Math.cos(endAngle);
-        const nextY = cy + currentR * Math.sin(endAngle);
-        const nextTheta = theta + sweep;
+        for (let j = 0; j < INTEGRATION_STEPS; j++) {
+            const s = (j + 0.5) / INTEGRATION_STEPS; // 局部中点进度
+            // 局部向心力与速度衰减对应的瞬时半径
+            const R_inst = currentR * (1 - DECAY_COEFF * s);
 
-        // 弧线 i 代表用刃状态 State i，传递计算得到的特异性 R 参数以实现动态画弧
+            const dTheta = -K * dPhi;
+            const ds = R_inst * dPhi;
+            arcLength += ds;
+
+            const thetaMid = theta + dTheta / 2;
+
+            x += ds * Math.cos(thetaMid);
+            y += ds * Math.sin(thetaMid);
+            theta += dTheta;
+
+            points.push({ x, y, theta });
+        }
+
         arcs.push({
-            startX: x,
-            startY: y,
-            endX: nextX,
-            endY: nextY,
-            cx,
-            cy,
-            R: currentR,
-            startAngle,
-            endAngle,
-            anticlockwise: (K === 1), // K === 1 (CCW) 对应 Canvas 逆时针绘制
+            points: points,
+            length: arcLength,
             state: stateStr,
             move: step.move
         });
-
-        x = nextX;
-        y = nextY;
-        theta = nextTheta;
 
         // Node i+1 代表动作转换
         const isLast = (i === pathData.length - 1);
