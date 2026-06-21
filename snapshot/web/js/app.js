@@ -877,7 +877,7 @@ function loadSearchedPathToCanvas(idx) {
     const selectedPath = window.searchedPathsCache[idx];
     
     path = selectedPath.map(step => ({
-        state: `${step.state.foot}${step.state.direction}${step.state.edge}`,
+        state: typeof step.state === 'string' ? step.state : `${step.state.foot}${step.state.direction}${step.state.edge}`,
         move: step.move
     }));
 
