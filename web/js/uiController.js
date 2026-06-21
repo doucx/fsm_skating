@@ -31,6 +31,21 @@ export function renderPathTrailHTML(path, isMini = false) {
     }).join("");
 }
 
+/**
+ * 统一结果卡片模板 (封装 DRY 逻辑)
+ */
+export function renderResultCardHTML(path, totalDifficulty, onClickAction) {
+    const trailHTML = renderPathTrailHTML(path, true);
+    return `
+        <button onclick="${onClickAction}" class="w-full text-left bg-slate-900/40 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl transition-all duration-300 group outline-none">
+            <div class="flex justify-between items-center">
+                <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
+                <span class="text-[10px] font-semibold px-2 py-1 rounded bg-sky-950/60 text-sky-400 border border-sky-900 shrink-0 ml-4">难度: ${totalDifficulty}</span>
+            </div>
+        </button>
+    `;
+}
+
 export function updateStats(path, undoCallback) {
     const stepsCount = path.length - 1;
     document.getElementById("stat-steps").innerText = `${stepsCount} 步`;

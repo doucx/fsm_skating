@@ -154,7 +154,7 @@ async function verifySequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-rose-950 bg-rose-950/20";
             output.innerHTML = `<p class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i> 校验失败</p><p class="text-xs text-slate-300 mt-2">${data.error}</p>`;
         } else {
-            output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-4";
+            output.className = "mt-4 space-y-3";
             
             // 构造路径数组用于渲染
             const pathForRender = [];
@@ -164,16 +164,6 @@ async function verifySequence() {
                 pathForRender.push({ state: t.to_state, move: null });
             });
 
-            const trailHTML = ui.renderPathTrailHTML(pathForRender, true);
-
-            // 歧义检查
-            let candidateHTML = "";
-            const ambiguousSteps = data.transitions.filter(t => t.candidate_moves.length > 1);
-            if (ambiguousSteps.length > 0) {
-                const details = ambiguousSteps.map(t => t.selected_move.name).join(", ");
-                candidateHTML = `<div class="text-[10px] text-amber-400/80 bg-amber-950/20 p-2 rounded border border-amber-900/50"><i class="fa-solid fa-circle-nodes mr-1"></i>存在物理歧义。识别结果仅为最优匹配，其它候选：${details}</div>`;
-            }
-
             // 允许一键渲染 verifiedPath
             window.verifiedPathData = data.transitions.map(t => ({
                 state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
@@ -181,18 +171,23 @@ async function verifySequence() {
             }));
             window.verifiedInitialState = typeof data.states[0] === 'string' ? data.states[0] : `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
 
-            const loadBtnHTML = `
-                <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1.5 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line mr-1"></i> 将此验证轨迹载入主画布预览
-                </button>
-            `;
+            // 歧义检查 (保留在卡片外部)
+            let candidateHTML = "";
+            const ambiguousSteps = data.transitions.filter(t => t.candidate_moves.length > 1);
+            if (ambiguousSteps.length > 0) {
+                const details = ambiguousSteps.map(t => t.selected_move.name).join(", ");
+                candidateHTML = `<div class="text-[10px] text-amber-400/80 bg-amber-950/20 p-2 rounded border border-amber-900/50 mt-2"><i class="fa-solid fa-circle-nodes mr-1"></i>存在物理歧义。其它候选：${details}</div>`;
+            }
+
+            const cardHTML = ui.renderResultCardHTML(pathForRender, data.total_difficulty, "loadVerifiedPathToCanvas()");
 
             output.innerHTML = `
-                <p class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-circle-check mr-1"></i> 验证通过！符合物理规范</p>
-                <div class="flex flex-wrap items-center gap-1.5 py-1">${trailHTML}</div>
+                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between mb-3">
+                    <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 验证成功</p>
+                    <span class="text-[10px] text-slate-500 font-mono">Verified Path</span>
+                </div>
+                ${cardHTML}
                 ${candidateHTML}
-                <div class="text-xs text-slate-400 border-t border-emerald-900/30 pt-2">总设计难度积分: <strong class="text-slate-200 text-sm">${data.total_difficulty}</strong></div>
-                ${loadBtnHTML}
             `;
         }
     } catch (err) {
@@ -220,7 +215,7 @@ async function verifyMovesSequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-rose-950 bg-rose-950/20";
             output.innerHTML = `<p class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i> 校验失败</p><p class="text-xs text-slate-300 mt-2">${data.error}</p>`;
         } else {
-            output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-4";
+            output.className = "mt-4 space-y-3";
             
             const pathForRender = [];
             data.trace.forEach((step, idx) => {
@@ -229,9 +224,7 @@ async function verifyMovesSequence() {
                 pathForRender.push({ state: step.to_state, move: null });
             });
 
-            const trailHTML = ui.renderPathTrailHTML(pathForRender, true);
-
-            // 渲染推导出的轨迹至主画布
+            // 准备载入数据
             window.verifiedPathData = data.trace.map(t => ({
                 state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
                 move: t.move
@@ -239,17 +232,14 @@ async function verifyMovesSequence() {
             const initial = typeof data.trace[0].from_state === 'string' ? data.trace[0].from_state : `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
             window.verifiedInitialState = initial;
 
-            const loadBtnHTML = `
-                <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1.5 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line mr-1"></i> 将此演算轨迹载入主画布预览
-                </button>
-            `;
+            const cardHTML = ui.renderResultCardHTML(pathForRender, data.total_difficulty, "loadVerifiedPathToCanvas()");
 
             output.innerHTML = `
-                <p class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-circle-check mr-1"></i> 验证并演算成功！</p>
-                <div class="flex flex-wrap items-center gap-1.5 py-1">${trailHTML}</div>
-                <div class="text-xs text-slate-400 border-t border-emerald-900/30 pt-2">推导总设计难度分: <strong class="text-slate-200 text-sm">${data.total_difficulty}</strong></div>
-                ${loadBtnHTML}
+                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between mb-3">
+                    <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 演算成功</p>
+                    <span class="text-[10px] text-slate-500 font-mono">Trace Inference</span>
+                </div>
+                ${cardHTML}
             `;
         }
     } catch (err) {
@@ -840,21 +830,11 @@ async function searchPaths() {
 
         paths.forEach((p, idx) => {
             const totalDiff = p.reduce((sum, step) => sum + (step.move ? step.move.difficulty : 0), 0);
-            const trailHTML = ui.renderPathTrailHTML(p, true);
-
-            const card = document.createElement("div");
-            card.className = "bg-slate-900/60 border border-slate-850 hover:border-sky-500/30 p-4 rounded-xl flex flex-col space-y-3 transition group";
+            const cardHTML = ui.renderResultCardHTML(p, totalDiff, `loadSearchedPathToCanvas(${idx})`);
             
-            card.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
-                    <span class="text-[10px] font-semibold px-2 py-1 rounded bg-sky-950/60 text-sky-400 border border-sky-900 shrink-0 ml-2">难度: ${totalDiff}</span>
-                </div>
-                <button onclick="loadSearchedPathToCanvas(${idx})" class="w-full py-1.5 bg-sky-950/40 hover:bg-sky-900/60 border border-sky-800/40 hover:border-sky-700 text-[10px] text-sky-300 rounded-md transition flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line mr-1"></i> 载入此轨迹至画布
-                </button>
-            `;
-            resultsDiv.appendChild(card);
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = cardHTML;
+            resultsDiv.appendChild(wrapper.firstElementChild);
         });
 
     } catch (err) {
