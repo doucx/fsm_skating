@@ -1,80 +1,54 @@
-这是一个典型的重构后遗症。在我们将后端 `State` 重构为直接序列化为字符串（如 `"LFO"`）后，前端 `loadSearchedPathToCanvas` 函数中原有的 `${step.state.foot}${step.state.direction}${step.state.edge}` 逻辑会因为尝试访问字符串的属性而返回 `undefined`，最终拼接成 `undefinedundefinedundefined`。
+好的，我们已经完成了 `State` 序列化的核心重构以及前端所有相关的渲染修复。现在是将这些更改作为一个逻辑单元提交到仓库的时候了。
 
-我将生成一个修复计划，更新该函数的映射逻辑。
-
-## [WIP] fix: 修复路径搜索结果载入画布时的状态字符串解析错误
-
-### 错误分析
-
-在之前的重构中，我们将 API 返回的 `state` 字段从对象格式（`{"foot": "L", ...}`）更改为了纯字符串格式（`"LFO"`）。
-
-然而，`web/js/app.js` 中的 `loadSearchedPathToCanvas` 函数仍然保留了旧的解构逻辑：
-```javascript
-path = selectedPath.map(step => ({
-    state: `${step.state.foot}${step.state.direction}${step.state.edge}`,
-    move: step.move
-}));
-```
-当 `step.state` 是字符串 `"LFO"` 时，`step.state.foot` 为 `undefined`。三个 `undefined` 拼接后就形成了用户看到的错误显示。
+## [COMMIT] refactor: 统一 State 序列化格式并修复前端渲染逻辑
 
 ### 用户需求
-修复从“物理路径搜索器”加载路径到主画布时，状态显示为 `undefinedundefinedundefined` 的 Bug。
+将 `State` (用刃状态) 的 API 传输格式统一为简写字符串，并修复因此引起的前端渲染及路径加载 Bug。
 
 ### 评论
-这是一个简单的回归错误。由于我们已经在整个系统中推动“状态即字符串”的规范，解决办法是让该函数具备识别并直接使用字符串的能力。
+这次重构解决了系统中滑行状态处理的非对称性问题。通过在 API 边界强制使用原子字符串，我们不仅根治了 `[object Object]` 错误，还显著简化了前后端的数据交换契约，使系统更加健壮且易于扩展。
 
 ### 目标
-1. 修正 `web/js/app.js` 中的 `loadSearchedPathToCanvas` 函数。
-2. 确保它能正确处理字符串格式的状态，并保留对旧对象的向后兼容性（防御性编程）。
+1. 将修改后的领域模型和前端脚本持久化到 Git 仓库。
+2. 确保提交信息清晰描述了重构的动机和解决的问题。
 
 ### 基本原理
-在映射路径步进（step）时，判断 `step.state` 的类型。如果是字符串，直接使用；如果是对象，则执行原有的拼接逻辑。
+遵循“指令级约束：脚本与 Git 操作互斥”的原则，在确认文件修改正确后，通过独立的 `[COMMIT]` 计划执行版本控制操作。
 
 ### 标签
-#intent/fix #flow/ready #priority/critical
-#comp/cli #concept/ui #scope/ux #ai/instruct
-#task/domain/ui
-#task/object/path-loader
-#task/action/bug-fix
-#task/state/continue
+#intent/refine #flow/ready #priority/medium 
+#comp/engine #comp/interfaces #concept/state #scope/core #scope/api 
+#ai/instruct 
+#task/domain/api #task/object/state-serialization #task/action/refactor 
+#task/state/end #task/status/completed
 
 ---
 
 ### Script
 
-#### Acts 1: 修正路径载入映射逻辑 (app.js)
+#### Acts 1: 提交变更
 
-修改 `web/js/app.js` 中的 `loadSearchedPathToCanvas` 函数。
+我们将把涉及重构的领域模型文件和前端交互脚本添加到暂存区，并创建一个详细的提交记录。
 
 ~~~~~act
-patch_file
+git_add
+src/fsm_skating/domain/models.py
 web/js/app.js
+web/js/uiController.js
 ~~~~~
-~~~~~javascript.old
-function loadSearchedPathToCanvas(idx) {
-    if (!window.searchedPathsCache || !window.searchedPathsCache[idx]) return;
-    const selectedPath = window.searchedPathsCache[idx];
-    
-    path = selectedPath.map(step => ({
-        state: `${step.state.foot}${step.state.direction}${step.state.edge}`,
-        move: step.move
-    }));
 
-    const startSelect = document.getElementById("start-state-select");
+~~~~~act
+git_commit
 ~~~~~
-~~~~~javascript.new
-function loadSearchedPathToCanvas(idx) {
-    if (!window.searchedPathsCache || !window.searchedPathsCache[idx]) return;
-    const selectedPath = window.searchedPathsCache[idx];
-    
-    path = selectedPath.map(step => ({
-        state: typeof step.state === 'string' ? step.state : `${step.state.foot}${step.state.direction}${step.state.edge}`,
-        move: step.move
-    }));
+~~~~~text
+refactor: standardize State serialization to atomic strings
 
-    const startSelect = document.getElementById("start-state-select");
+- Implemented custom Pydantic serializers/validators for the State model to handle "LFO"-style strings at API boundaries.
+- Refactored front-end path processing logic in app.js and uiController.js to directly consume string-based states.
+- Fixed a regression in the Path Searcher where state properties were accessed on strings (causing 'undefined' rendering).
+- Removed redundant object-to-string conversion glue code across the UI.
 ~~~~~
 
 ### 下一步建议
-- **回归检查**：在浏览器中重新运行路径搜索，点击“载入主画布预览”，确认状态现在能正确显示为 "LFO", "RBO" 等。
-- **UI 润色**：如果加载成功，可以考虑在载入时添加一个微弱的边框闪烁或 Toast 提示，增强用户感知的反馈。
+- **性能评估**：由于减少了 JSON 嵌套深度，可以观察在大规模路径搜索（如 intermediate_count > 10）时的响应速度变化。
+- **扩展动作库**：基于现在更稳定的状态推导机制，可以尝试在 `moves_config.yaml` 中添加更多复杂的组合步法，如 `Twizzle`（捻转步）。
