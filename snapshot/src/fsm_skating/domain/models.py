@@ -1,5 +1,5 @@
-from typing import Dict
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Dict, Any
+from pydantic import BaseModel, Field, ConfigDict, model_serializer, model_validator
 
 
 class State(BaseModel):
@@ -13,6 +13,28 @@ class State(BaseModel):
     foot: str = Field(..., pattern="^[LR]$")
     direction: str = Field(..., pattern="^[FB]$")
     edge: str = Field(..., pattern="^[OI]$")
+
+    @model_serializer
+    def serialize_model(self) -> str:
+        """
+        使 Pydantic 在转 JSON 时直接输出 "LFO" 字符串，而不是 {"foot":...}
+        """
+        return f"{self.foot}{self.direction}{self.edge}"
+
+    @model_validator(mode='before')
+    @classmethod
+    def validate_before(cls, value: Any) -> Any:
+        """
+        允许在输入校验前从字符串、字典或已有对象实例化
+        """
+        if isinstance(value, str):
+            s = value.strip().upper()
+            if len(s) != 3:
+                raise ValueError(
+                    f"Invalid state format: '{s}'. Must be 3 characters, e.g., 'LFO'."
+                )
+            return {"foot": s[0], "direction": s[1], "edge": s[2]}
+        return value
 
     @classmethod
     def from_string(cls, s: str) -> "State":

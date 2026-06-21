@@ -125,12 +125,14 @@ export function renderTransitionOptions(currState, options, onChoose) {
             rotBadge = '<span class="text-[10px] bg-teal-950 text-teal-300 border border-teal-800 px-1.5 py-0.5 rounded-md ml-2">↺ 逆旋转</span>';
         }
 
+        const nextStr = typeof next === 'string' ? next : `${next.foot}${next.direction}${next.edge}`;
+
         const item = document.createElement("button");
         item.className = "w-full text-left bg-slate-800/40 hover:bg-slate-700/60 border border-slate-700/60 rounded-xl p-3 flex justify-between items-center transition group";
         item.onclick = () => onChoose(next, move);
         item.innerHTML = `
             <div>
-                <span class="font-bold text-slate-200 group-hover:text-sky-300 transition tracking-wider mr-2">${currState} ──▶ ${next.foot}${next.direction}${next.edge}</span>
+                <span class="font-bold text-slate-200 group-hover:text-sky-300 transition tracking-wider mr-2">${currState} ──▶ ${nextStr}</span>
                 ${rotBadge}
                 <div class="text-xs text-slate-400 mt-1">${move.name}</div>
             </div>

@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] feat: 实现两用刃状态间指定间隔状态数的路径搜索功能", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782002857.7511752, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 重构 State (用刃状态) 序列化行为以彻底根置 [object Object] 问题", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782003149.048977, "duration_ms": 0}}
