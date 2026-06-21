@@ -62,6 +62,14 @@ class GeneratedStep(BaseModel):
     move: Optional[Move] = None
 
 
+class SearchRequest(BaseModel):
+    start_state: str
+    end_state: str
+    intermediate_count: int
+    max_difficulty: int = 5
+    max_results: int = 10
+
+
 @app.post("/api/verify", response_model=VerificationResponse)
 def verify_sequence(request: VerifyRequest):
     if not engine:
@@ -118,6 +126,39 @@ def generate_sequence(request: GenerateRequest):
         )
 
     return [GeneratedStep(state=s, move=m) for s, m in path]
+
+
+@app.post("/api/search", response_model=List[List[GeneratedStep]])
+def search_paths(request: SearchRequest):
+    if not engine:
+        raise HTTPException(status_code=500, detail="ChoreographyEngine 未成功初始化。")
+
+    try:
+        start_state_obj = State.from_string(request.start_state)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"无效的起始滑行状态: {e}")
+
+    try:
+        end_state_obj = State.from_string(request.end_state)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"无效的结束滑行状态: {e}")
+
+    if request.intermediate_count < 0:
+        raise HTTPException(status_code=400, detail="中间间隔状态数不能小于 0。")
+
+    paths = engine.search_paths(
+        start_state_obj,
+        end_state_obj,
+        request.intermediate_count,
+        request.max_difficulty,
+        request.max_results,
+    )
+
+    formatted_paths = []
+    for path in paths:
+        formatted_paths.append([GeneratedStep(state=s, move=m) for s, m in path])
+
+    return formatted_paths
 
 
 @app.get("/api/integrity")

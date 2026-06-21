@@ -390,3 +390,43 @@ class ChoreographyEngine:
                 report[cat_id]["generic_count"] += 1
 
         return report
+
+    def search_paths(
+        self,
+        start_state: State,
+        end_state: State,
+        intermediate_count: int,
+        max_difficulty: int = 5,
+        max_results: int = 10,
+    ) -> List[List[Tuple[State, Optional[Move]]]]:
+        """
+        使用 DFS 搜索从 start_state 到 end_state，中间恰好包含 intermediate_count 个状态的可行物理轨迹。
+        即总共发生 (intermediate_count + 1) 次状态转移。
+        """
+        results: List[List[Tuple[State, Optional[Move]]]] = []
+        target_transitions = intermediate_count + 1
+
+        def dfs(curr_state: State, path_so_far: List[Tuple[State, Move]]):
+            if len(results) >= max_results:
+                return
+
+            if len(path_so_far) == target_transitions:
+                if curr_state == end_state:
+                    full_path: List[Tuple[State, Optional[Move]]] = []
+                    for s, m in path_so_far:
+                        full_path.append((s, m))
+                    full_path.append((end_state, None))
+                    results.append(full_path)
+                return
+
+            if len(path_so_far) > target_transitions:
+                return
+
+            options = self.get_possible_transitions(curr_state, max_difficulty)
+            for opt in options:
+                nxt_state = opt.target_state
+                move = opt.move
+                dfs(nxt_state, path_so_far + [(curr_state, move)])
+
+        dfs(start_state, [])
+        return results
