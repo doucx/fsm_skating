@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 将路径搜索启发式权重暴露至 UI 以实现高级编排微调", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005403.240051, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "Capture: M main.py", "type": "capture", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005526.8594553, "duration_ms": 0}}
