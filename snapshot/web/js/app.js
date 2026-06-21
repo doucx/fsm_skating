@@ -50,7 +50,37 @@ document.addEventListener("DOMContentLoaded", () => {
     window.importTrajectorySource = importTrajectorySource;
     window.searchPaths = searchPaths;
     window.loadSearchedPathToCanvas = loadSearchedPathToCanvas;
+    window.switchSearchTab = switchSearchTab;
+    window.updateWeightDisplay = updateWeightDisplay;
 });
+
+function switchSearchTab(mode) {
+    const isBasic = mode === 'basic';
+    document.getElementById('panel-search-advanced')?.classList.toggle('hidden', isBasic); // 此行逻辑稍后修正，面板 ID 需对应
+    
+    // 切换按钮样式
+    const btnBasic = document.getElementById('tab-search-basic');
+    const btnAdvanced = document.getElementById('tab-search-advanced');
+    const panelAdvanced = document.getElementById('search-panel-advanced');
+
+    if (isBasic) {
+        btnBasic.className = "px-3 py-1 text-[10px] font-bold rounded-md bg-sky-600 text-white shadow-sm transition";
+        btnAdvanced.className = "px-3 py-1 text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200 transition";
+        panelAdvanced.classList.add('hidden');
+    } else {
+        btnBasic.className = "px-3 py-1 text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200 transition";
+        btnAdvanced.className = "px-3 py-1 text-[10px] font-bold rounded-md bg-sky-600 text-white shadow-sm transition";
+        panelAdvanced.classList.remove('hidden');
+    }
+}
+
+function updateWeightDisplay(key) {
+    const range = document.getElementById(`range-w-${key}`);
+    const valDisplay = document.getElementById(`val-w-${key}`);
+    if (range && valDisplay) {
+        valDisplay.innerText = parseFloat(range.value).toFixed(1);
+    }
+}
 
 function initChoreography() {
     const startState = document.getElementById("start-state-select").value;
@@ -811,6 +841,14 @@ async function searchPaths() {
     const maxDiff = document.getElementById("search-max-diff").value;
     const maxResults = document.getElementById("search-max-results").value;
 
+    // 采集高级权重
+    const weights = {
+        step_cost: parseFloat(document.getElementById("range-w-step").value),
+        difficulty_bonus: parseFloat(document.getElementById("range-w-diff").value),
+        balance_penalty: parseFloat(document.getElementById("range-w-balance").value),
+        diversity_penalty: parseFloat(document.getElementById("range-w-diversity").value)
+    };
+
     const container = document.getElementById("search-results-container");
     const resultsDiv = document.getElementById("search-results");
 
@@ -818,7 +856,7 @@ async function searchPaths() {
     resultsDiv.innerHTML = '<p class="text-xs text-slate-500 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>正在进行启发式路径检索与评估...</p>';
 
     try {
-        const paths = await api.searchPaths(startState, endState, interCount, maxDiff, maxResults);
+        const paths = await api.searchPaths(startState, endState, interCount, maxDiff, maxResults, weights);
         
         if (paths.length === 0) {
             resultsDiv.innerHTML = '<p class="text-xs text-rose-400/80 p-2 border border-rose-950 bg-rose-950/20 rounded-lg">⚠️ 未检索到任何合规路径！请尝试改变起止用刃、调整间隔数或放宽难度限制。</p>';

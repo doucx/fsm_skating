@@ -427,6 +427,7 @@ class ChoreographyEngine:
         intermediate_count: int,
         max_difficulty: int = 5,
         max_results: int = 10,
+        weights: Optional[Dict[str, float]] = None,
     ) -> List[List[Tuple[State, Optional[Move]]]]:
         """
         使用 A* 算法检索物理轨迹，综合评估距离、难度、旋转平衡度和类别多样性，
@@ -436,10 +437,12 @@ class ChoreographyEngine:
         results: List[List[Tuple[State, Optional[Move]]]] = []
         
         # 启发函数特征权重配置 (调节偏好)
-        C_STEP = 10.0      # 单步执行的基础惩罚代价
-        C_DIFF = 3.0       # 动作难度奖励抵扣乘数 (鼓励高难度)
-        C_BALANCE = 15.0   # 旋转平衡度失调的惩罚因子
-        C_DIVERSITY = 20.0 # 动作类别缺乏多样性的惩罚因子
+        w = weights or {}
+        C_STEP = w.get("step_cost", 10.0)
+        C_DIFF = w.get("difficulty_bonus", 3.0)
+        C_BALANCE = w.get("balance_penalty", 15.0)
+        C_DIVERSITY = w.get("diversity_penalty", 20.0)
+        
         TARGET_CATEGORIES = 4
         
         open_set = []

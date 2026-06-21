@@ -68,6 +68,7 @@ class SearchRequest(BaseModel):
     intermediate_count: int
     max_difficulty: int = 5
     max_results: int = 10
+    weights: Optional[Dict[str, float]] = None
 
 
 @app.post("/api/verify", response_model=VerificationResponse)
