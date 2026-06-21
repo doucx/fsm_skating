@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] tune(ui/cli): 隐藏具体算法实现细节，统一业务术语描述", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782004961.2546198, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat: 升级编排引擎为 A* 搜索并优化 UI 术语", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005053.0281737, "duration_ms": 0}}
