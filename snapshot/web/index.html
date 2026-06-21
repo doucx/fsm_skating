@@ -263,8 +263,8 @@
 
                 <!-- 智能随机路径规划 -->
                 <div class="ice-card rounded-2xl p-6">
-                    <h2 class="text-lg font-semibold flex items-center text-amber-400 mb-3"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 3. DFS 惯性轨迹自动生成器</h2>
-                    <p class="text-xs text-slate-400 mb-3">基于深度优先回溯规划出绝不进入“死胡同”的滑跑路径。</p>
+                    <h2 class="text-lg font-semibold flex items-center text-amber-400 mb-3"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 3. 智能轨迹自动生成器</h2>
+                    <p class="text-xs text-slate-400 mb-3">基于滑行演化逻辑，自动规划出不进入“死胡同”的滑跑方案。</p>
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
                             <label class="block text-[10px] text-slate-400 mb-1">规划总动作步数</label>
@@ -281,7 +281,7 @@
                 <!-- 物理路径搜索器 -->
                 <div class="ice-card rounded-2xl p-6">
                     <h2 class="text-lg font-semibold flex items-center text-sky-400 mb-3"><i class="fa-solid fa-route mr-2"></i> 4. 物理路径搜索器</h2>
-                    <p class="text-xs text-slate-400 mb-3">使用 DFS 算法，精准检索起止用刃状态之间、指定间隔状态数的全部可行滑跑路径。</p>
+                    <p class="text-xs text-slate-400 mb-3">基于物理规则与启发式度量，检索起止状态间指定步数的最优路径方案。</p>
                     
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>

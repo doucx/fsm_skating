@@ -815,7 +815,7 @@ async function searchPaths() {
     const resultsDiv = document.getElementById("search-results");
 
     container.classList.remove("hidden");
-    resultsDiv.innerHTML = '<p class="text-xs text-slate-500 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>正在利用 DFS 穷举物理路径...</p>';
+    resultsDiv.innerHTML = '<p class="text-xs text-slate-500 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>正在进行启发式路径检索与评估...</p>';
 
     try {
         const paths = await api.searchPaths(startState, endState, interCount, maxDiff, maxResults);

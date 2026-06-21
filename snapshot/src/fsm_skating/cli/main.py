@@ -291,7 +291,7 @@ def run_generator(engine: ChoreographyEngine):
         except (ValueError, IndexError):
             print("[-] 无效选择，请输入 0 至 8 之间的数字。")
 
-    print("\n⚡ 正在调配 FSM 编排状态机，并应用 DFS 算法规划冰面最优惯性路径...")
+    print("\n⚡ 正在调配 FSM 编排状态机，规划冰面最优惯性路径...")
     path = engine.generate_sequence(steps, max_diff, start_state)
 
     if path is None:
@@ -414,7 +414,7 @@ def run_path_search(engine: ChoreographyEngine):
             print("[-] 请输入有效的整数。")
 
     print(
-        f"\n⚡ 正在调配 DFS 算法检索从 {start_state} 到 {end_state} (中间间隔 {intermediate_count} 个状态) 的合规路径..."
+        f"\n⚡ 正在检索从 {start_state} 到 {end_state} (中间间隔 {intermediate_count} 个状态) 的合规滑行路径..."
     )
     paths = engine.search_paths(
         start_state, end_state, intermediate_count, max_difficulty, max_results

@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(engine): 引入 A* 启发式搜索算法优化高难度步法路径检索", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782004681.3580425, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] tune(ui/cli): 隐藏具体算法实现细节，统一业务术语描述", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782004961.2546198, "duration_ms": 0}}
