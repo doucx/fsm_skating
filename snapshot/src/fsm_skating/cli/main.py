@@ -363,7 +363,7 @@ def run_path_search(engine: ChoreographyEngine):
 
     for idx, state in enumerate(ALL_STATES, 1):
         print(f"  [{idx}] {state} - {get_state_desc(state)}")
-    
+
     while True:
         start_idx = input("请选择起始状态序号 [1-8]: ").strip()
         try:
@@ -413,11 +413,17 @@ def run_path_search(engine: ChoreographyEngine):
         except ValueError:
             print("[-] 请输入有效的整数。")
 
-    print(f"\n⚡ 正在调配 DFS 算法检索从 {start_state} 到 {end_state} (中间间隔 {intermediate_count} 个状态) 的合规路径...")
-    paths = engine.search_paths(start_state, end_state, intermediate_count, max_difficulty, max_results)
+    print(
+        f"\n⚡ 正在调配 DFS 算法检索从 {start_state} 到 {end_state} (中间间隔 {intermediate_count} 个状态) 的合规路径..."
+    )
+    paths = engine.search_paths(
+        start_state, end_state, intermediate_count, max_difficulty, max_results
+    )
 
     if not paths:
-        print("[-] ❌ 未检索到任何符合条件的滑行路线。建议尝试调整间隔状态数或提升允许难度限制。")
+        print(
+            "[-] ❌ 未检索到任何符合条件的滑行路线。建议尝试调整间隔状态数或提升允许难度限制。"
+        )
     else:
         print(f"[+] 🎉 成功检索到 {len(paths)} 条合规路径：\n")
         for p_idx, path in enumerate(paths, 1):
@@ -429,11 +435,15 @@ def run_path_search(engine: ChoreographyEngine):
                 s_curr, m_next = path[i]
                 s_next = path[i + 1][0]
                 if m_next:
-                    print(f"      - {s_curr} ──▶ {s_next} | {m_next.name} (难度: {m_next.difficulty})")
+                    print(
+                        f"      - {s_curr} ──▶ {s_next} | {m_next.name} (难度: {m_next.difficulty})"
+                    )
             print()
 
         while True:
-            export_choice = input(f"请输入需要导出详细报告的路径序号 [1-{len(paths)}，直接回车返回]: ").strip()
+            export_choice = input(
+                f"请输入需要导出详细报告的路径序号 [1-{len(paths)}，直接回车返回]: "
+            ).strip()
             if not export_choice:
                 break
             try:

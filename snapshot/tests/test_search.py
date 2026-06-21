@@ -16,7 +16,7 @@ def test_search_paths_direct(engine):
     # 间隔 0 个状态意味着刚好有 1 次直接用刃转移
     paths = engine.search_paths(start, end, intermediate_count=0)
     assert len(paths) >= 1
-    
+
     for p in paths:
         assert len(p) == 2
         assert str(p[0][0]) == "LFO"
