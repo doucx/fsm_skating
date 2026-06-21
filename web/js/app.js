@@ -85,7 +85,7 @@ async function fetchNextTransitions() {
 
 function chooseNextMove(nextStateObj, moveObj) {
     path[path.length - 1].move = moveObj;
-    const nextStateStr = `${nextStateObj.foot}${nextStateObj.direction}${nextStateObj.edge}`;
+    const nextStateStr = typeof nextStateObj === 'string' ? nextStateObj : `${nextStateObj.foot}${nextStateObj.direction}${nextStateObj.edge}`;
     path.push({ state: nextStateStr, move: null });
 
     ui.updateCurrStateUI(nextStateStr);
@@ -157,8 +157,8 @@ async function verifySequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-3";
             let listHTML = "";
             data.transitions.forEach((t) => {
-                const fromStr = `${t.from_state.foot}${t.from_state.direction}${t.from_state.edge}`;
-                const toStr = `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`;
+                const fromStr = typeof t.from_state === 'string' ? t.from_state : `${t.from_state.foot}${t.from_state.direction}${t.from_state.edge}`;
+                const toStr = typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`;
                 const rot = t.selected_move.rotation_dir ? ` [${t.selected_move.rotation_dir === 'CW' ? '顺时针' : '逆时针'}]` : "";
                 let candidateHTML = "";
                 if (t.candidate_moves.length > 1) {
@@ -176,10 +176,10 @@ async function verifySequence() {
 
             // 允许一键渲染 verifiedPath
             window.verifiedPathData = data.transitions.map(t => ({
-                state: `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
+                state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
                 move: t.selected_move
             }));
-            window.verifiedInitialState = `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
+            window.verifiedInitialState = typeof data.states[0] === 'string' ? data.states[0] : `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
 
             const loadBtnHTML = `
                 <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
@@ -222,8 +222,8 @@ async function verifyMovesSequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-3";
             let listHTML = "";
             data.trace.forEach((step) => {
-                const fromStr = `${step.from_state.foot}${step.from_state.direction}${step.from_state.edge}`;
-                const toStr = `${step.to_state.foot}${step.to_state.direction}${step.to_state.edge}`;
+                const fromStr = typeof step.from_state === 'string' ? step.from_state : `${step.from_state.foot}${step.from_state.direction}${step.from_state.edge}`;
+                const toStr = typeof step.to_state === 'string' ? step.to_state : `${step.to_state.foot}${step.to_state.direction}${step.to_state.edge}`;
                 const rot = step.move.rotation_dir ? ` [${step.move.rotation_dir === 'CW' ? '顺时针' : '逆时针'}]` : "";
                 listHTML += `
                     <div class="text-xs pl-3 border-l border-emerald-800">
@@ -235,10 +235,10 @@ async function verifyMovesSequence() {
 
             // 渲染推导出的轨迹至主画布
             window.verifiedPathData = data.trace.map(t => ({
-                state: `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
+                state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
                 move: t.move
             }));
-            const initial = `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
+            const initial = typeof data.trace[0].from_state === 'string' ? data.trace[0].from_state : `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
             window.verifiedInitialState = initial;
 
             const loadBtnHTML = `
@@ -281,7 +281,7 @@ async function generateSequence() {
         const data = await api.generateSequence(parseInt(steps), parseInt(maxDiff), selectState);
         path = [];
         data.forEach((step) => {
-            const stateStr = `${step.state.foot}${step.state.direction}${step.state.edge}`;
+            const stateStr = typeof step.state === 'string' ? step.state : `${step.state.foot}${step.state.direction}${step.state.edge}`;
             path.push({
                 state: stateStr,
                 move: step.move
@@ -841,7 +841,7 @@ async function searchPaths() {
         window.searchedPathsCache = paths;
 
         paths.forEach((p, idx) => {
-            const seqStr = p.map(step => `${step.state.foot}${step.state.direction}${step.state.edge}`).join(" ──▶ ");
+            const seqStr = p.map(step => typeof step.state === 'string' ? step.state : `${step.state.foot}${step.state.direction}${step.state.edge}`).join(" ──▶ ");
             const totalDiff = p.reduce((sum, step) => sum + (step.move ? step.move.difficulty : 0), 0);
             
             const movesList = p
@@ -877,7 +877,7 @@ function loadSearchedPathToCanvas(idx) {
     const selectedPath = window.searchedPathsCache[idx];
     
     path = selectedPath.map(step => ({
-        state: `${step.state.foot}${step.state.direction}${step.state.edge}`,
+        state: typeof step.state === 'string' ? step.state : `${step.state.foot}${step.state.direction}${step.state.edge}`,
         move: step.move
     }));
 
