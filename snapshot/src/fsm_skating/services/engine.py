@@ -1,7 +1,9 @@
 import os
 import yaml
 import random
-from typing import List, Dict, Tuple, Any, Optional
+import heapq
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Any, Optional, Set
 from pydantic import BaseModel
 
 # 引入重构后的领域模型命名空间
@@ -43,7 +45,7 @@ class Move(BaseModel):
     conditions: Dict[str, bool]
     start_constraints: Optional[Dict[str, str]] = None
     rotation_dir: Optional[str] = None
-    geometry_config: Optional[Dict[str, float]] = None  # 新增透传因子字段
+    geometry_config: Optional[Dict[str, float]] = None
 
 
 class MoveOption(BaseModel):
@@ -80,6 +82,18 @@ class MoveVerificationResponse(BaseModel):
     total_difficulty: int = 0
 
 
+@dataclass(order=True)
+class ChoreoSearchNode:
+    f_score: float
+    current_state: State = field(compare=False)
+    path_depth: int = field(compare=False)
+    path: List[Tuple[State, Optional[Move]]] = field(compare=False)
+    accumulated_difficulty: int = field(compare=False)
+    categories_used: Set[str] = field(compare=False)
+    cw_count: int = field(compare=False)
+    ccw_count: int = field(compare=False)
+
+
 class ChoreographyEngine:
     """
     花样滑冰状态机编排与过滤引擎。
@@ -90,6 +104,30 @@ class ChoreographyEngine:
         config_data = self._load_config_data()
         self.moves = config_data.get("moves", [])
         self.categories = config_data.get("categories", {})
+        self.distance_matrix = self._build_distance_matrix()
+
+    def _build_distance_matrix(self) -> Dict[str, Dict[str, float]]:
+        """
+        BFS 预计算任意两状态间的最短步数，用于 A* 算法的启发式可达性绝对剪枝。
+        """
+        matrix = {str(s): {str(target): float('inf') for target in ALL_STATES} for s in ALL_STATES}
+        
+        for start in ALL_STATES:
+            queue = [(start, 0)]
+            matrix[str(start)][str(start)] = 0
+            visited = {str(start)}
+            
+            while queue:
+                curr, dist = queue.pop(0)
+                options = self.get_possible_transitions(curr)
+                for opt in options:
+                    nxt_str = str(opt.target_state)
+                    if nxt_str not in visited:
+                        visited.add(nxt_str)
+                        matrix[str(start)][nxt_str] = dist + 1
+                        queue.append((opt.target_state, dist + 1))
+                        
+        return matrix
 
     def _load_config_data(self) -> Dict[str, Any]:
         if not os.path.exists(self.config_path):
@@ -225,13 +263,10 @@ class ChoreographyEngine:
         if not move_ids:
             return MoveVerificationResponse(valid=False, error="动作 ID 序列不能为空。")
 
-        # 缓存配置字典，便于 O(1) 检索
         move_db = {m["id"]: m for m in self.moves}
 
-        # 确定起始滑行状态
         current_state = start_state
         if not current_state:
-            # 尝试推导首个动作的缺省起滑状态
             first_move_data = move_db.get(move_ids[0])
             if not first_move_data:
                 return MoveVerificationResponse(
@@ -240,7 +275,6 @@ class ChoreographyEngine:
             constraints = first_move_data.get("start_constraints", {})
             dir_c = constraints.get("dir", "F")
             edge_c = constraints.get("edge", "O")
-            # 缺省选用左脚（L），完全符合标准的编排惯例
             current_state = State(foot="L", direction=dir_c, edge=edge_c)
 
         trace_details: List[MoveVerificationDetail] = []
@@ -254,7 +288,6 @@ class ChoreographyEngine:
                     error=f"在第 {idx + 1} 步检测到未知动作 ID: '{move_id}'",
                 )
 
-            # 1. 起滑方向与用刃约束检查
             constraints = move_data.get("start_constraints")
             if constraints:
                 if (
@@ -271,15 +304,11 @@ class ChoreographyEngine:
                         error=f"第 {idx + 1} 步动作校验失败：动作 '{move_data['name']}' 要求以 '{constraints['edge']}' 内外刃起滑，但当前滑行状态为 '{current_state}'。",
                     )
 
-            # 2. 调用第一阶段新引入的状态推导核心演算下一个状态
-            from fsm_skating.domain.models import (
-                calculate_next_state,
-            )
+            from fsm_skating.domain.models import calculate_next_state
 
             conditions = move_data["conditions"]
             next_state = calculate_next_state(current_state, conditions)
 
-            # 3. 统一推导旋转体并构建 Move 对象
             move_obj = self._build_move(move_data, current_state)
 
             trace_details.append(
@@ -400,33 +429,112 @@ class ChoreographyEngine:
         max_results: int = 10,
     ) -> List[List[Tuple[State, Optional[Move]]]]:
         """
-        使用 DFS 搜索从 start_state 到 end_state，中间恰好包含 intermediate_count 个状态的可行物理轨迹。
-        即总共发生 (intermediate_count + 1) 次状态转移。
+        使用 A* 算法检索物理轨迹，综合评估距离、难度、旋转平衡度和类别多样性，
+        使高难度搜索时能更快收敛到高质量的最优滑行路线。
         """
+        target_steps = intermediate_count + 1
         results: List[List[Tuple[State, Optional[Move]]]] = []
-        target_transitions = intermediate_count + 1
-
-        def dfs(curr_state: State, path_so_far: List[Tuple[State, Move]]):
-            if len(results) >= max_results:
-                return
-
-            if len(path_so_far) == target_transitions:
-                if curr_state == end_state:
-                    full_path: List[Tuple[State, Optional[Move]]] = []
-                    for s, m in path_so_far:
-                        full_path.append((s, m))
-                    full_path.append((end_state, None))
-                    results.append(full_path)
-                return
-
-            if len(path_so_far) > target_transitions:
-                return
-
-            options = self.get_possible_transitions(curr_state, max_difficulty)
+        
+        # 启发函数特征权重配置 (调节偏好)
+        C_STEP = 10.0      # 单步执行的基础惩罚代价
+        C_DIFF = 3.0       # 动作难度奖励抵扣乘数 (鼓励高难度)
+        C_BALANCE = 15.0   # 旋转平衡度失调的惩罚因子
+        C_DIVERSITY = 20.0 # 动作类别缺乏多样性的惩罚因子
+        TARGET_CATEGORIES = 4
+        
+        open_set = []
+        node_id = 0
+        
+        init_node = ChoreoSearchNode(
+            f_score=0.0,
+            current_state=start_state,
+            path_depth=0,
+            path=[(start_state, None)],
+            accumulated_difficulty=0,
+            categories_used=set(),
+            cw_count=0,
+            ccw_count=0
+        )
+        
+        heapq.heappush(open_set, (init_node.f_score, node_id, init_node))
+        closed_set = set()
+        
+        while open_set and len(results) < max_results:
+            _, _, curr = heapq.heappop(open_set)
+            
+            # 达成深度条件判定
+            if curr.path_depth == target_steps:
+                if curr.current_state == end_state:
+                    results.append(curr.path)
+                continue
+                
+            # 使用包含丰富历史特征的复合 Key 作为防重复回溯验证，
+            # 确保不抹杀“途径不同但到达同一物理状态”的优质路径。
+            state_key = (
+                curr.current_state,
+                curr.path_depth,
+                frozenset(curr.categories_used),
+                curr.cw_count,
+                curr.ccw_count
+            )
+            if state_key in closed_set:
+                continue
+            closed_set.add(state_key)
+            
+            options = self.get_possible_transitions(curr.current_state, max_difficulty)
+            
             for opt in options:
-                nxt_state = opt.target_state
+                next_state = opt.target_state
                 move = opt.move
-                dfs(nxt_state, path_so_far + [(curr_state, move)])
-
-        dfs(start_state, [])
+                
+                remaining_steps = target_steps - (curr.path_depth + 1)
+                min_dist = self.distance_matrix[str(next_state)][str(end_state)]
+                
+                # 1. 物理可达性快速剪枝: 剩余步数小于理论最短物理步距，直接砍掉此分支
+                if remaining_steps < min_dist:
+                    continue
+                    
+                # 2. 演化累积特征
+                next_categories = curr.categories_used.copy()
+                next_categories.add(move.category)
+                
+                next_cw = curr.cw_count + (1 if move.rotation_dir == "CW" else 0)
+                next_ccw = curr.ccw_count + (1 if move.rotation_dir == "CCW" else 0)
+                
+                # 构建下一步的路径流
+                next_path = curr.path[:-1] + [(curr.current_state, move), (next_state, None)]
+                
+                # 3. 计算实际代价 g(n)
+                g_score = (curr.path_depth + 1) * C_STEP - (curr.accumulated_difficulty + move.difficulty) * C_DIFF
+                
+                # 4. 计算前瞻启发代价 h(n)
+                # 4a. 距离启发代价
+                h_dist = remaining_steps * C_STEP
+                
+                # 4b. 旋转平衡度启发代价
+                bal_diff = abs(next_cw - next_ccw)
+                min_final_bal_diff = max(0, bal_diff - remaining_steps)
+                h_bal = min_final_bal_diff * C_BALANCE
+                
+                # 4c. 多样性启发代价
+                missing_cats = max(0, TARGET_CATEGORIES - len(next_categories) - remaining_steps)
+                h_div = missing_cats * C_DIVERSITY
+                
+                # 综合预估最优值
+                f_score = g_score + h_dist + h_bal + h_div
+                
+                next_node = ChoreoSearchNode(
+                    f_score=f_score,
+                    current_state=next_state,
+                    path_depth=curr.path_depth + 1,
+                    path=next_path,
+                    accumulated_difficulty=curr.accumulated_difficulty + move.difficulty,
+                    categories_used=next_categories,
+                    cw_count=next_cw,
+                    ccw_count=next_ccw
+                )
+                
+                node_id += 1
+                heapq.heappush(open_set, (f_score, node_id, next_node))
+                
         return results

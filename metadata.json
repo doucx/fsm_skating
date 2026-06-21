@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] refactor(web): 提取路径卡片模板并实现极简交互 UI", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782004199.1666992, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] feat(engine): 引入 A* 启发式搜索算法优化高难度步法路径检索", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782004681.3580425, "duration_ms": 0}}
