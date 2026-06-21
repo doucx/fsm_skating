@@ -154,7 +154,7 @@ async function verifySequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-rose-950 bg-rose-950/20";
             output.innerHTML = `<p class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i> 校验失败</p><p class="text-xs text-slate-300 mt-2">${data.error}</p>`;
         } else {
-            output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-4";
+            output.className = "mt-4 space-y-3";
             
             // 构造路径数组用于渲染
             const pathForRender = [];
@@ -171,7 +171,7 @@ async function verifySequence() {
             const ambiguousSteps = data.transitions.filter(t => t.candidate_moves.length > 1);
             if (ambiguousSteps.length > 0) {
                 const details = ambiguousSteps.map(t => t.selected_move.name).join(", ");
-                candidateHTML = `<div class="text-[10px] text-amber-400/80 bg-amber-950/20 p-2 rounded border border-amber-900/50"><i class="fa-solid fa-circle-nodes mr-1"></i>存在物理歧义。识别结果仅为最优匹配，其它候选：${details}</div>`;
+                candidateHTML = `<div class="text-[10px] text-amber-400/80 bg-amber-950/20 p-2 rounded border border-amber-900/50"><i class="fa-solid fa-circle-nodes mr-1"></i>存在物理歧义。其它候选：${details}</div>`;
             }
 
             // 允许一键渲染 verifiedPath
@@ -181,18 +181,20 @@ async function verifySequence() {
             }));
             window.verifiedInitialState = typeof data.states[0] === 'string' ? data.states[0] : `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
 
-            const loadBtnHTML = `
-                <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1.5 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line mr-1"></i> 将此验证轨迹载入主画布预览
-                </button>
-            `;
-
             output.innerHTML = `
-                <p class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-circle-check mr-1"></i> 验证通过！符合物理规范</p>
-                <div class="flex flex-wrap items-center gap-1.5 py-1">${trailHTML}</div>
+                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between">
+                    <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 验证成功</p>
+                    <span class="text-[10px] text-slate-500 font-mono">Difficulty: ${data.total_difficulty}</span>
+                </div>
+                
+                <button onclick="loadVerifiedPathToCanvas()" class="w-full text-left bg-slate-900/60 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-2 transition-all duration-300 group outline-none">
+                    <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
+                    <div class="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                        <i class="fa-solid fa-chart-line mr-1 text-sky-500/70"></i> 
+                        点击载入此验证轨迹
+                    </div>
+                </button>
                 ${candidateHTML}
-                <div class="text-xs text-slate-400 border-t border-emerald-900/30 pt-2">总设计难度积分: <strong class="text-slate-200 text-sm">${data.total_difficulty}</strong></div>
-                ${loadBtnHTML}
             `;
         }
     } catch (err) {
@@ -220,7 +222,7 @@ async function verifyMovesSequence() {
             output.className = "mt-4 p-4 rounded-xl text-sm border border-rose-950 bg-rose-950/20";
             output.innerHTML = `<p class="text-rose-400 font-semibold"><i class="fa-solid fa-circle-xmark mr-1"></i> 校验失败</p><p class="text-xs text-slate-300 mt-2">${data.error}</p>`;
         } else {
-            output.className = "mt-4 p-4 rounded-xl text-sm border border-emerald-950 bg-emerald-950/10 text-slate-300 space-y-4";
+            output.className = "mt-4 space-y-3";
             
             const pathForRender = [];
             data.trace.forEach((step, idx) => {
@@ -231,7 +233,7 @@ async function verifyMovesSequence() {
 
             const trailHTML = ui.renderPathTrailHTML(pathForRender, true);
 
-            // 渲染推导出的轨迹至主画布
+            // 准备载入数据
             window.verifiedPathData = data.trace.map(t => ({
                 state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
                 move: t.move
@@ -239,17 +241,19 @@ async function verifyMovesSequence() {
             const initial = typeof data.trace[0].from_state === 'string' ? data.trace[0].from_state : `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
             window.verifiedInitialState = initial;
 
-            const loadBtnHTML = `
-                <button onclick="loadVerifiedPathToCanvas()" class="mt-2 w-full py-1.5 bg-sky-950 hover:bg-sky-900 border border-sky-800 rounded-md text-xs text-sky-300 transition flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line mr-1"></i> 将此演算轨迹载入主画布预览
-                </button>
-            `;
-
             output.innerHTML = `
-                <p class="text-emerald-400 font-bold flex items-center"><i class="fa-solid fa-circle-check mr-1"></i> 验证并演算成功！</p>
-                <div class="flex flex-wrap items-center gap-1.5 py-1">${trailHTML}</div>
-                <div class="text-xs text-slate-400 border-t border-emerald-900/30 pt-2">推导总设计难度分: <strong class="text-slate-200 text-sm">${data.total_difficulty}</strong></div>
-                ${loadBtnHTML}
+                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between">
+                    <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 演算与校验成功</p>
+                    <span class="text-[10px] text-slate-500 font-mono">Total Difficulty: ${data.total_difficulty}</span>
+                </div>
+                
+                <button onclick="loadVerifiedPathToCanvas()" class="w-full text-left bg-slate-900/60 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-2 transition-all duration-300 group outline-none">
+                    <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
+                    <div class="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                        <i class="fa-solid fa-chart-line mr-1 text-sky-500/70"></i> 
+                        点击载入此演算轨迹
+                    </div>
+                </button>
             `;
         }
     } catch (err) {
