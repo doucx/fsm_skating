@@ -1,5 +1,36 @@
 import { getCurvature } from './state.js';
 
+/**
+ * 统一路径轨迹 HTML 生成器
+ * @param {Array} path 路径数据数组 [{state, move}, ...]
+ * @param {Boolean} isMini 是否使用紧凑布局
+ * @returns {String} HTML 字符串
+ */
+export function renderPathTrailHTML(path, isMini = false) {
+    const size = isMini 
+        ? { state: "px-1.5 py-0.5 text-[10px]", move: "px-1.5 py-0.5 text-[9px]", diff: "text-[7px]", arrow: "text-[8px]" }
+        : { state: "px-2.5 py-1 text-xs", move: "px-2.5 py-1 text-[10px]", diff: "text-[8px]", arrow: "text-[9px]" };
+
+    return path.map((step, idx) => {
+        const stateStr = typeof step.state === 'string' ? step.state : `${step.state.foot}${step.state.direction}${step.state.edge}`;
+        let html = `<span class="${size.state} font-bold font-mono tracking-wider bg-sky-950 text-sky-300 rounded-md border border-sky-800 glow-ice flex items-center shrink-0">${stateStr}</span>`;
+        
+        if (step.move) {
+            const miniName = step.move.name.split(" ")[0];
+            const rotIcon = step.move.rotation_dir ? (step.move.rotation_dir === 'CW' ? ' ↻' : ' ↺') : '';
+            html += `
+                <span class="${size.arrow} text-slate-600 self-center px-0.5"><i class="fa-solid fa-chevron-right"></i></span>
+                <div class="flex items-center space-x-1.5 ${size.move} bg-amber-950/40 border border-amber-500/40 rounded-md shadow-[0_0_10px_rgba(245,158,11,0.25)] text-amber-400 font-semibold shrink-0">
+                    <span class="tracking-tight">${miniName}${rotIcon}</span>
+                    <span class="px-1 py-0.2 bg-amber-500 text-slate-950 rounded-[3px] ${size.diff} font-extrabold leading-none scale-90 origin-right">${step.move.difficulty}级</span>
+                </div>
+                <span class="${size.arrow} text-slate-600 self-center px-0.5"><i class="fa-solid fa-chevron-right"></i></span>
+            `;
+        }
+        return html;
+    }).join("");
+}
+
 export function updateStats(path, undoCallback) {
     const stepsCount = path.length - 1;
     document.getElementById("stat-steps").innerText = `${stepsCount} 步`;
@@ -42,42 +73,7 @@ export function updateStats(path, undoCallback) {
     }
 
     const trail = document.getElementById("choreography-trail");
-    trail.innerHTML = "";
-    path.forEach((step, idx) => {
-        // 绘制用刃状态节点 (天蓝微光)
-        const stateNode = document.createElement("span");
-        stateNode.className = "px-2.5 py-1 text-xs font-bold font-mono tracking-wider bg-sky-950 text-sky-300 rounded-md border border-sky-800 glow-ice flex items-center";
-        stateNode.innerText = step.state;
-        trail.appendChild(stateNode);
-
-        if (step.move) {
-            // 1. 动作节点前置衔接箭头 (柔和暗灰)
-            const preArrow = document.createElement("span");
-            preArrow.className = "text-[9px] text-slate-600 self-center px-0.5";
-            preArrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-            trail.appendChild(preArrow);
-
-            // 2. 橙色 LED 动作转换节点
-            const actNode = document.createElement("div");
-            // 内置柔和的 amber 发光滤镜与投影
-            actNode.className = "flex items-center space-x-1.5 px-2.5 py-1 bg-amber-950/40 border border-amber-500/40 rounded-md shadow-[0_0_10px_rgba(245,158,11,0.25)] text-amber-400 text-[10px] font-semibold";
-            
-            const miniName = step.move.name.split(" ")[0];
-            actNode.innerHTML = `
-                <span class="tracking-tight">${miniName}</span>
-                <span class="px-1 py-0.2 bg-amber-500 text-slate-950 rounded-[3px] text-[8px] font-extrabold leading-none scale-90 origin-right">
-                    ${step.move.difficulty}级
-                </span>
-            `;
-            trail.appendChild(actNode);
-
-            // 3. 动作节点后置衔接箭头
-            const postArrow = document.createElement("span");
-            postArrow.className = "text-[9px] text-slate-600 self-center px-0.5";
-            postArrow.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-            trail.appendChild(postArrow);
-        }
-    });
+    trail.innerHTML = renderPathTrailHTML(path);
 
     if (stepsCount > 0) {
         const undoBtn = document.createElement("button");
