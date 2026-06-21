@@ -164,16 +164,6 @@ async function verifySequence() {
                 pathForRender.push({ state: t.to_state, move: null });
             });
 
-            const trailHTML = ui.renderPathTrailHTML(pathForRender, true);
-
-            // 歧义检查
-            let candidateHTML = "";
-            const ambiguousSteps = data.transitions.filter(t => t.candidate_moves.length > 1);
-            if (ambiguousSteps.length > 0) {
-                const details = ambiguousSteps.map(t => t.selected_move.name).join(", ");
-                candidateHTML = `<div class="text-[10px] text-amber-400/80 bg-amber-950/20 p-2 rounded border border-amber-900/50"><i class="fa-solid fa-circle-nodes mr-1"></i>存在物理歧义。其它候选：${details}</div>`;
-            }
-
             // 允许一键渲染 verifiedPath
             window.verifiedPathData = data.transitions.map(t => ({
                 state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
@@ -181,19 +171,22 @@ async function verifySequence() {
             }));
             window.verifiedInitialState = typeof data.states[0] === 'string' ? data.states[0] : `${data.states[0].foot}${data.states[0].direction}${data.states[0].edge}`;
 
+            // 歧义检查 (保留在卡片外部)
+            let candidateHTML = "";
+            const ambiguousSteps = data.transitions.filter(t => t.candidate_moves.length > 1);
+            if (ambiguousSteps.length > 0) {
+                const details = ambiguousSteps.map(t => t.selected_move.name).join(", ");
+                candidateHTML = `<div class="text-[10px] text-amber-400/80 bg-amber-950/20 p-2 rounded border border-amber-900/50 mt-2"><i class="fa-solid fa-circle-nodes mr-1"></i>存在物理歧义。其它候选：${details}</div>`;
+            }
+
+            const cardHTML = ui.renderResultCardHTML(pathForRender, data.total_difficulty, "loadVerifiedPathToCanvas()");
+
             output.innerHTML = `
-                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between">
+                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between mb-3">
                     <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 验证成功</p>
-                    <span class="text-[10px] text-slate-500 font-mono">Difficulty: ${data.total_difficulty}</span>
+                    <span class="text-[10px] text-slate-500 font-mono">Verified Path</span>
                 </div>
-                
-                <button onclick="loadVerifiedPathToCanvas()" class="w-full text-left bg-slate-900/60 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-2 transition-all duration-300 group outline-none">
-                    <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
-                    <div class="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                        <i class="fa-solid fa-chart-line mr-1 text-sky-500/70"></i> 
-                        点击载入此验证轨迹
-                    </div>
-                </button>
+                ${cardHTML}
                 ${candidateHTML}
             `;
         }
@@ -231,8 +224,6 @@ async function verifyMovesSequence() {
                 pathForRender.push({ state: step.to_state, move: null });
             });
 
-            const trailHTML = ui.renderPathTrailHTML(pathForRender, true);
-
             // 准备载入数据
             window.verifiedPathData = data.trace.map(t => ({
                 state: typeof t.to_state === 'string' ? t.to_state : `${t.to_state.foot}${t.to_state.direction}${t.to_state.edge}`,
@@ -241,19 +232,14 @@ async function verifyMovesSequence() {
             const initial = typeof data.trace[0].from_state === 'string' ? data.trace[0].from_state : `${data.trace[0].from_state.foot}${data.trace[0].from_state.direction}${data.trace[0].from_state.edge}`;
             window.verifiedInitialState = initial;
 
+            const cardHTML = ui.renderResultCardHTML(pathForRender, data.total_difficulty, "loadVerifiedPathToCanvas()");
+
             output.innerHTML = `
-                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between">
-                    <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 演算与校验成功</p>
-                    <span class="text-[10px] text-slate-500 font-mono">Total Difficulty: ${data.total_difficulty}</span>
+                <div class="px-4 py-2 bg-emerald-950/20 border border-emerald-900/50 rounded-lg flex items-center justify-between mb-3">
+                    <p class="text-emerald-400 text-xs font-bold flex items-center"><i class="fa-solid fa-circle-check mr-2"></i> 演算成功</p>
+                    <span class="text-[10px] text-slate-500 font-mono">Trace Inference</span>
                 </div>
-                
-                <button onclick="loadVerifiedPathToCanvas()" class="w-full text-left bg-slate-900/60 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-2 transition-all duration-300 group outline-none">
-                    <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
-                    <div class="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                        <i class="fa-solid fa-chart-line mr-1 text-sky-500/70"></i> 
-                        点击载入此演算轨迹
-                    </div>
-                </button>
+                ${cardHTML}
             `;
         }
     } catch (err) {
@@ -844,24 +830,11 @@ async function searchPaths() {
 
         paths.forEach((p, idx) => {
             const totalDiff = p.reduce((sum, step) => sum + (step.move ? step.move.difficulty : 0), 0);
-            const trailHTML = ui.renderPathTrailHTML(p, true);
-
-            const card = document.createElement("button");
-            card.onclick = () => loadSearchedPathToCanvas(idx);
-            // 将 card 设为 button 后，添加 text-left 和 w-full 确保布局正确
-            card.className = "w-full text-left bg-slate-900/40 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-2 transition-all duration-300 group outline-none";
+            const cardHTML = ui.renderResultCardHTML(p, totalDiff, `loadSearchedPathToCanvas(${idx})`);
             
-            card.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
-                    <span class="text-[10px] font-semibold px-2 py-1 rounded bg-sky-950/60 text-sky-400 border border-sky-900 shrink-0 ml-2">难度: ${totalDiff}</span>
-                </div>
-                <div class="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                    <i class="fa-solid fa-chart-line mr-1 text-sky-500/70"></i> 
-                    点击以将此轨迹载入冰面预览
-                </div>
-            `;
-            resultsDiv.appendChild(card);
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = cardHTML;
+            resultsDiv.appendChild(wrapper.firstElementChild);
         });
 
     } catch (err) {
