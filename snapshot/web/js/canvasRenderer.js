@@ -63,7 +63,8 @@ export class CanvasRenderer {
         if (nodes.length === 0) return;
 
         const transform = this.getTransform(nodes);
-        const { scale } = this._getBoundsAndScale(nodes);
+
+        // 绘制微光网格冰面质感
 
         // 绘制微光网格冰面质感
         ctx.strokeStyle = "rgba(148, 163, 184, 0.04)";
@@ -83,50 +84,44 @@ export class CanvasRenderer {
 
         const fFactor = document.fullscreenElement ? this.zoomFactor : 1.0;
 
-        // 绘制连续滑行圆弧段 (Arcs = States)
+        // 绘制连续滑行螺线段 (Arcs = Clothoid Segments)
         arcs.forEach((arc, idx) => {
-            const centerTrans = transform(arc.cx, arc.cy);
-            const scaledR = arc.R * scale * fFactor;
-
             ctx.save();
             ctx.beginPath();
-            ctx.arc(centerTrans.x, centerTrans.y, scaledR, arc.startAngle, arc.endAngle, arc.anticlockwise);
+            
+            arc.polyline.forEach((p, pIdx) => {
+                const pt = transform(p.x, p.y);
+                if (pIdx === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            });
 
             const progressRatio = (idx + 1) / arcs.length;
             const stateInfo = parseState(arc.state);
             const isLeft = stateInfo.isLeft;
             const isForward = stateInfo.isForward;
 
-            // 区分双脚：左脚蓝色，右脚橙色
             const baseColor = isLeft ? "56, 189, 248" : "249, 115, 22";
             ctx.strokeStyle = `rgba(${baseColor}, ${0.5 + progressRatio * 0.5})`;
             ctx.shadowColor = `rgba(${baseColor}, 0.65)`;
             ctx.lineWidth = 3.5 * fFactor;
             ctx.shadowBlur = 12 * fFactor;
 
-            // 前后向：前滑实线，后滑虚线 (ISU标准)
-            if (isForward) {
-                ctx.setLineDash([]);
-            } else {
-                ctx.setLineDash([6 * fFactor, 4 * fFactor]);
-            }
+            if (!isForward) ctx.setLineDash([6 * fFactor, 4 * fFactor]);
 
             ctx.stroke();
             ctx.restore();
 
-            // 绘制用刃状态名称 (如 LFO, LBI) 于弧线几何中点
-            const midAngle = arc.startAngle + (arc.endAngle - arc.startAngle) * 0.5;
-            const mx = centerTrans.x + scaledR * Math.cos(midAngle);
-            const my = centerTrans.y + scaledR * Math.sin(midAngle);
+            // 在螺线中点绘制用刃名称
+            const midP = arc.polyline[Math.floor(arc.polyline.length / 2)];
+            const midTrans = transform(midP.x, midP.y);
 
             ctx.fillStyle = "#ffffff";
             ctx.font = `bold ${Math.round(11 * fFactor)}px monospace`;
             ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(arc.state, mx, my - 10 * fFactor);
+            ctx.fillText(arc.state, midTrans.x, midTrans.y - 12 * fFactor);
 
-            // 绘制滑行轨迹行进切方向箭头
-            this._drawArrow(ctx, transform, arc, midAngle, isLeft, fFactor);
+            // 绘制滑行方向箭头 (取螺线末端切向)
+            this._drawSpiralArrow(ctx, transform, arc, isLeft, fFactor);
         });
 
         // 绘制动作转换节点 (Nodes = Moves)
@@ -182,13 +177,13 @@ export class CanvasRenderer {
         });
     }
 
-    _drawArrow(ctx, transform, arc, midAngle, isLeft, fFactor) {
-        const worldMx = arc.cx + arc.R * Math.cos(midAngle);
-        const worldMy = arc.cy + arc.R * Math.sin(midAngle);
-        const pMid = transform(worldMx, worldMy);
+    _drawSpiralArrow(ctx, transform, arc, isLeft, fFactor) {
+        // 取螺线中段的两个点计算切向
+        const p1 = arc.polyline[Math.floor(arc.polyline.length / 2)];
+        const p2 = arc.polyline[Math.floor(arc.polyline.length / 2) + 1];
+        const pMid = transform(p1.x, p1.y);
 
-        const midK = arc.anticlockwise ? -1 : 1;
-        const arrowAngle = Math.atan2(midK * Math.cos(midAngle), -midK * Math.sin(midAngle));
+        const arrowAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
         const arrowLength = 9 * fFactor;
         const arrowWidth = 5 * fFactor;
@@ -215,8 +210,8 @@ export class CanvasRenderer {
 
         const transform = this.getTransform(nodes);
 
-        // 1. 根据总弧长计算当前 progress 落在哪个 arc 上
-        const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+        // 1. 根据总物理长度计算当前 progress 落在哪个螺线段上
+        const totalLength = arcs.reduce((acc, arc) => acc + arc.totalLength, 0);
         let targetLen = totalLength * progress;
         let currentLen = 0;
         let targetArc = arcs[arcs.length - 1];
@@ -225,20 +220,32 @@ export class CanvasRenderer {
         let targetIdx = arcs.length - 1;
         for (let i = 0; i < arcs.length; i++) {
             const arc = arcs[i];
-            const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
-            if (currentLen + arcLen >= targetLen) {
+            if (currentLen + arc.totalLength >= targetLen) {
                 targetArc = arc;
                 targetIdx = i;
-                localProgress = (targetLen - currentLen) / arcLen;
+                localProgress = (targetLen - currentLen) / arc.totalLength;
                 break;
             }
-            currentLen += arcLen;
+            currentLen += arc.totalLength;
         }
 
-        // 2. 计算插值坐标
-        const currentAngle = targetArc.startAngle + (targetArc.endAngle - targetArc.startAngle) * localProgress;
-        const worldX = targetArc.cx + targetArc.R * Math.cos(currentAngle);
-        const worldY = targetArc.cy + targetArc.R * Math.sin(currentAngle);
+        // 2. 在 polyline 中通过累积长度进行二次线性插值以获取坐标
+        const arcTargetLen = targetArc.totalLength * localProgress;
+        let p1 = targetArc.polyline[0];
+        let p2 = targetArc.polyline[targetArc.polyline.length - 1];
+        
+        for(let j=0; j < targetArc.polyline.length - 1; j++) {
+            if(targetArc.polyline[j+1].length >= arcTargetLen) {
+                p1 = targetArc.polyline[j];
+                p2 = targetArc.polyline[j+1];
+                break;
+            }
+        }
+        
+        const segmentLen = p2.length - p1.length;
+        const t = segmentLen > 0 ? (arcTargetLen - p1.length) / segmentLen : 0;
+        const worldX = p1.x + (p2.x - p1.x) * t;
+        const worldY = p1.y + (p2.y - p1.y) * t;
         const pos = transform(worldX, worldY);
 
         // 3. 绘制追踪球 (冰晶小球)

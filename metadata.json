@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[COMMIT] feat: 暴露搜索启发式权重以支持高级路径编排微调", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005527.3694086, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] refactor: 引入轨迹半径衰减算法模拟欧拉螺线 (Clothoid Spiral) 效果", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005582.025241, "duration_ms": 0}}
