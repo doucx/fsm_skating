@@ -50,17 +50,20 @@ export async function verifyMovesSequence(moveIds, startState) {
     return await res.json();
 }
 
-export async function searchPaths(startState, endState, intermediateCount, maxDifficulty, maxResults) {
+export async function searchPaths(startState, endState, intermediateCount, maxDifficulty, maxResults, weights = null) {
+    const payload = {
+        start_state: startState,
+        end_state: endState,
+        intermediate_count: parseInt(intermediateCount),
+        max_difficulty: parseInt(maxDifficulty),
+        max_results: parseInt(maxResults)
+    };
+    if (weights) payload.weights = weights;
+
     const res = await fetch(`${API_BASE}/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            start_state: startState,
-            end_state: endState,
-            intermediate_count: parseInt(intermediateCount),
-            max_difficulty: parseInt(maxDifficulty),
-            max_results: parseInt(maxResults)
-        })
+        body: JSON.stringify(payload)
     });
     if (!res.ok) {
         const detail = await res.json();

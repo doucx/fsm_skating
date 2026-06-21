@@ -280,12 +280,20 @@
 
                 <!-- 物理路径搜索器 -->
                 <div class="ice-card rounded-2xl p-6">
-                    <h2 class="text-lg font-semibold flex items-center text-sky-400 mb-3"><i class="fa-solid fa-route mr-2"></i> 4. 物理路径搜索器</h2>
-                    <p class="text-xs text-slate-400 mb-3">基于物理规则与启发式度量，检索起止状态间指定步数的最优路径方案。</p>
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-lg font-semibold flex items-center text-sky-400"><i class="fa-solid fa-route mr-2"></i> 4. 物理路径搜索器</h2>
+                        <div class="flex bg-slate-800/80 rounded-lg p-0.5 border border-slate-700/50">
+                            <button id="tab-search-basic" onclick="switchSearchTab('basic')" class="px-3 py-1 text-[10px] font-bold rounded-md bg-sky-600 text-white shadow-sm transition">基础</button>
+                            <button id="tab-search-advanced" onclick="switchSearchTab('advanced')" class="px-3 py-1 text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200 transition">高级</button>
+                        </div>
+                    </div>
                     
-                    <div class="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-1">起始用刃状态</label>
+                    <p class="text-xs text-slate-400 mb-4">基于物理规则与启发式度量，检索起止状态间指定步数的最优路径方案。</p>
+                    
+                    <div id="search-panel-basic" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-1">起始用刃状态</label>
                             <select id="search-start-state" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 outline-none focus:border-sky-500">
                                 <option value="LFO">LFO - 左前外刃</option>
                                 <option value="LFI">LFI - 左前内刃</option>
@@ -325,6 +333,47 @@
                             <label class="block text-[10px] text-slate-400 mb-1">最大结果数量</label>
                             <input id="search-max-results" type="number" value="10" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none text-slate-200">
                         </div>
+                    </div>
+
+                    <div id="search-panel-advanced" class="hidden mb-4 p-4 bg-slate-950/40 rounded-xl border border-slate-800/60 space-y-4">
+                        <h4 class="text-[10px] font-bold text-sky-500 uppercase tracking-widest flex items-center">
+                            <i class="fa-solid fa-sliders mr-2"></i> A* 启发式搜索权重微调
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1">
+                                    <span class="text-slate-400">单步执行代价 (Step Cost)</span>
+                                    <span id="val-w-step" class="text-sky-400 font-mono">10.0</span>
+                                </div>
+                                <input id="range-w-step" type="range" min="0" max="50" step="0.5" value="10" oninput="updateWeightDisplay('step')" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1">
+                                    <span class="text-slate-400">难度奖励系数 (Diff Bonus)</span>
+                                    <span id="val-w-diff" class="text-amber-400 font-mono">3.0</span>
+                                </div>
+                                <input id="range-w-diff" type="range" min="0" max="20" step="0.1" value="3" oninput="updateWeightDisplay('diff')" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1">
+                                    <span class="text-slate-400">方向失调惩罚 (Balance Penalty)</span>
+                                    <span id="val-w-balance" class="text-teal-400 font-mono">15.0</span>
+                                </div>
+                                <input id="range-w-balance" type="range" min="0" max="50" step="0.5" value="15" oninput="updateWeightDisplay('balance')" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1">
+                                    <span class="text-slate-400">缺乏多样性惩罚 (Diversity Penalty)</span>
+                                    <span id="val-w-diversity" class="text-indigo-400 font-mono">20.0</span>
+                                </div>
+                                <input id="range-w-diversity" type="range" min="0" max="50" step="0.5" value="20" oninput="updateWeightDisplay('diversity')" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                            </div>
+                        </div>
+                        <p class="text-[9px] text-slate-500 italic">注：权重越高代表该特征在路径评估中越被看重。难度奖励越高倾向于生成复杂动作。</p>
                     </div>
 
                     <button onclick="searchPaths()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 rounded-lg text-sm transition shadow-lg shadow-sky-950/20"><i class="fa-solid fa-magnifying-glass mr-1"></i> 一键检索可行路径</button>
