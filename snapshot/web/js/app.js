@@ -841,7 +841,7 @@ async function searchPaths() {
         window.searchedPathsCache = paths;
 
         paths.forEach((p, idx) => {
-            const seqStr = p.map(step => step.state).join(" ──▶ ");
+            const seqStr = p.map(step => `${step.state.foot}${step.state.direction}${step.state.edge}`).join(" ──▶ ");
             const totalDiff = p.reduce((sum, step) => sum + (step.move ? step.move.difficulty : 0), 0);
             
             const movesList = p
@@ -877,7 +877,7 @@ function loadSearchedPathToCanvas(idx) {
     const selectedPath = window.searchedPathsCache[idx];
     
     path = selectedPath.map(step => ({
-        state: step.state,
+        state: `${step.state.foot}${step.state.direction}${step.state.edge}`,
         move: step.move
     }));
 

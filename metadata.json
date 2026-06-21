@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 完成 FSM 路径搜索功能的前端对接", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782002495.2522914, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] fix: 修复路径检索结果的状态序列对象序列化错误", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782002732.3531096, "duration_ms": 0}}
