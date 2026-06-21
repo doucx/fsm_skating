@@ -45,8 +45,9 @@ def test_search_paths_with_intermediates(engine):
 def test_search_paths_no_solution(engine):
     """验证无合规转移物理动作时的返回情况"""
     start = State.from_string("LFO")
-    end = State.from_string("RBO")
+    # LFO -> RFO 对应 Cross Roll (难度 2)
+    end = State.from_string("RFO")
 
-    # LFO 直接 1 步转移到 RBO 是不被物理配置允许的（间隔0）
-    paths = engine.search_paths(start, end, intermediate_count=0)
+    # 当限制最大难度为 1 时，LFO 无法在 1 步内转移到 RFO (间隔0)
+    paths = engine.search_paths(start, end, intermediate_count=0, max_difficulty=1)
     assert len(paths) == 0

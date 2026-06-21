@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 添加两状态间可行路径的 DFS 搜索功能(后端及CLI)", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782002202.842378, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[WIP] fix: 修正路径搜索单元测试中的物理逻辑假设错误", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782002332.423603, "duration_ms": 0}}
