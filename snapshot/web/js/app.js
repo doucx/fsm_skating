@@ -351,10 +351,10 @@ function updateLinearTimelineUI(geometry) {
     }
 
     container.innerHTML = "";
-    const totalLength = arcs.reduce((acc, arc) => acc + (arc.R * Math.abs(arc.endAngle - arc.startAngle)), 0);
+    const totalLength = arcs.reduce((acc, arc) => acc + arc.length, 0);
 
     arcs.forEach((arc, idx) => {
-        const arcLen = arc.R * Math.abs(arc.endAngle - arc.startAngle);
+        const arcLen = arc.length;
         const widthPercent = (arcLen / totalLength) * 100;
         
         const seg = document.createElement("div");
@@ -376,7 +376,7 @@ function updateLinearTimelineUI(geometry) {
             marker.className = "timeline-marker";
             // 计算当前累积的百分比位置
             let accumulatedLen = 0;
-            for(let j=0; j<=idx; j++) accumulatedLen += arcs[j].R * Math.abs(arcs[j].endAngle - arcs[j].startAngle);
+            for(let j=0; j<=idx; j++) accumulatedLen += arcs[j].length;
             marker.style.left = `${(accumulatedLen / totalLength) * 100}%`;
             container.appendChild(marker);
         }
