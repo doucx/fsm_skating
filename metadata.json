@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat: 引入基于数值积分与半径衰减的欧拉螺线滑行轨迹模拟", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005707.7385414, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat(web): 引入基于数值积分的欧拉螺线滑行轨迹模拟", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782005841.3457134, "duration_ms": 0}}
