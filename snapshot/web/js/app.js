@@ -48,6 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.chooseNextMove = chooseNextMove;
     window.copyTrajectorySource = copyTrajectorySource;
     window.importTrajectorySource = importTrajectorySource;
+    window.searchPaths = searchPaths;
+    window.loadSearchedPathToCanvas = loadSearchedPathToCanvas;
 });
 
 function initChoreography() {
@@ -812,4 +814,80 @@ async function importTrajectorySource() {
     } catch (err) {
         alert(`[-] 导入解析失败: ${err.message}`);
     }
+}
+
+async function searchPaths() {
+    const startState = document.getElementById("search-start-state").value;
+    const endState = document.getElementById("search-end-state").value;
+    const interCount = document.getElementById("search-inter-count").value;
+    const maxDiff = document.getElementById("search-max-diff").value;
+    const maxResults = document.getElementById("search-max-results").value;
+
+    const container = document.getElementById("search-results-container");
+    const resultsDiv = document.getElementById("search-results");
+
+    container.classList.remove("hidden");
+    resultsDiv.innerHTML = '<p class="text-xs text-slate-500 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>正在利用 DFS 穷举物理路径...</p>';
+
+    try {
+        const paths = await api.searchPaths(startState, endState, interCount, maxDiff, maxResults);
+        
+        if (paths.length === 0) {
+            resultsDiv.innerHTML = '<p class="text-xs text-rose-400/80 p-2 border border-rose-950 bg-rose-950/20 rounded-lg">⚠️ 未检索到任何合规路径！请尝试改变起止用刃、调整间隔数或放宽难度限制。</p>';
+            return;
+        }
+
+        resultsDiv.innerHTML = "";
+        window.searchedPathsCache = paths;
+
+        paths.forEach((p, idx) => {
+            const seqStr = p.map(step => step.state).join(" ──▶ ");
+            const totalDiff = p.reduce((sum, step) => sum + (step.move ? step.move.difficulty : 0), 0);
+            
+            const movesList = p
+                .filter(step => step.move)
+                .map(step => `<span class="text-[10px] bg-slate-850 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700/50">${step.move.name}</span>`)
+                .join(" ");
+
+            const card = document.createElement("div");
+            card.className = "bg-slate-900/60 border border-slate-850 hover:border-sky-500/30 p-3 rounded-xl flex flex-col space-y-2 transition group";
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-bold font-mono text-slate-200 tracking-wider break-all">${seqStr}</span>
+                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-400 border border-sky-900 shrink-0">难度: ${totalDiff}</span>
+                </div>
+                <div class="flex flex-wrap gap-1 items-center">
+                    ${movesList}
+                </div>
+                <button onclick="loadSearchedPathToCanvas(${idx})" class="w-full py-1.5 bg-sky-950/40 hover:bg-sky-900/60 border border-sky-800/40 hover:border-sky-700 text-[10px] text-sky-300 rounded-md transition flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line mr-1"></i> 将此验证轨迹载入主画布预览
+                </button>
+            `;
+            resultsDiv.appendChild(card);
+        });
+
+    } catch (err) {
+        resultsDiv.innerHTML = `<p class="text-xs text-rose-400">检索发生异常: ${err.message}</p>`;
+    }
+}
+
+function loadSearchedPathToCanvas(idx) {
+    if (!window.searchedPathsCache || !window.searchedPathsCache[idx]) return;
+    const selectedPath = window.searchedPathsCache[idx];
+    
+    path = selectedPath.map(step => ({
+        state: step.state,
+        move: step.move
+    }));
+
+    const startSelect = document.getElementById("start-state-select");
+    if (startSelect && path[0]) {
+        startSelect.value = path[0].state;
+    }
+
+    const lastState = path[path.length - 1].state;
+    ui.updateCurrStateUI(lastState);
+    fetchNextTransitions();
+    syncChoreographyUI();
 }

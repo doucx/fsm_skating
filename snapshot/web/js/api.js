@@ -49,3 +49,22 @@ export async function verifyMovesSequence(moveIds, startState) {
     }
     return await res.json();
 }
+
+export async function searchPaths(startState, endState, intermediateCount, maxDifficulty, maxResults) {
+    const res = await fetch(`${API_BASE}/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            start_state: startState,
+            end_state: endState,
+            intermediate_count: parseInt(intermediateCount),
+            max_difficulty: parseInt(maxDifficulty),
+            max_results: parseInt(maxResults)
+        })
+    });
+    if (!res.ok) {
+        const detail = await res.json();
+        throw new Error(detail.detail || "路径检索失败");
+    }
+    return await res.json();
+}
