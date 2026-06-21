@@ -842,18 +842,20 @@ async function searchPaths() {
             const totalDiff = p.reduce((sum, step) => sum + (step.move ? step.move.difficulty : 0), 0);
             const trailHTML = ui.renderPathTrailHTML(p, true);
 
-            const card = document.createElement("div");
-            // 优化：默认使用更清晰的 slate-800 边框，Hover 时变为 sky 亮色、微蓝背景及软辉光阴影
-            card.className = "bg-slate-900/60 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-3 transition-all duration-300 group";
+            const card = document.createElement("button");
+            card.onclick = () => loadSearchedPathToCanvas(idx);
+            // 将 card 设为 button 后，添加 text-left 和 w-full 确保布局正确
+            card.className = "w-full text-left bg-slate-900/40 border border-slate-800 hover:border-sky-400/50 hover:bg-sky-400/5 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] p-4 rounded-xl flex flex-col space-y-2 transition-all duration-300 group outline-none";
             
             card.innerHTML = `
                 <div class="flex justify-between items-center">
                     <div class="flex flex-wrap items-center gap-1.5 overflow-hidden">${trailHTML}</div>
                     <span class="text-[10px] font-semibold px-2 py-1 rounded bg-sky-950/60 text-sky-400 border border-sky-900 shrink-0 ml-2">难度: ${totalDiff}</span>
                 </div>
-                <button onclick="loadSearchedPathToCanvas(${idx})" class="w-full py-1.5 bg-sky-950/40 hover:bg-sky-900/60 border border-sky-800/40 hover:border-sky-700 text-[10px] text-sky-300 rounded-md transition flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line mr-1"></i> 载入此轨迹至画布
-                </button>
+                <div class="text-[9px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                    <i class="fa-solid fa-chart-line mr-1 text-sky-500/70"></i> 
+                    点击以将此轨迹载入冰面预览
+                </div>
             `;
             resultsDiv.appendChild(card);
         });
