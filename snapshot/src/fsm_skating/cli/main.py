@@ -354,6 +354,99 @@ def run_linter(engine: ChoreographyEngine):
     print("\n" + "📊" * 15 + "\n")
 
 
+def run_path_search(engine: ChoreographyEngine):
+    """
+    5. 物理路径搜索模块
+    """
+    print("\n❄️  进入 [5. 物理路径搜索模块] ❄️")
+    print("本模块用于检索两指定滑行状态之间、符合特定间隔状态数的可行滑跑路径方案。")
+
+    for idx, state in enumerate(ALL_STATES, 1):
+        print(f"  [{idx}] {state} - {get_state_desc(state)}")
+    
+    while True:
+        start_idx = input("请选择起始状态序号 [1-8]: ").strip()
+        try:
+            start_state = ALL_STATES[int(start_idx) - 1]
+            break
+        except (ValueError, IndexError):
+            print("[-] 输入有误，请输入 1 到 8 之间的数字。")
+
+    while True:
+        end_idx = input("请选择结束状态序号 [1-8]: ").strip()
+        try:
+            end_state = ALL_STATES[int(end_idx) - 1]
+            break
+        except (ValueError, IndexError):
+            print("[-] 输入有误，请输入 1 到 8 之间的数字。")
+
+    while True:
+        inter_str = input("请输入中间间隔的刃状态数 (>=0, 例如 2): ").strip()
+        try:
+            intermediate_count = int(inter_str)
+            if intermediate_count < 0:
+                print("[-] 间隔数量不能为负数。")
+                continue
+            break
+        except ValueError:
+            print("[-] 请输入有效的正整数或 0。")
+
+    while True:
+        diff_str = input("请输入此套搜索的最大允许动作难度限制 [1-5, 默认 5]: ").strip()
+        if not diff_str:
+            max_difficulty = 5
+            break
+        try:
+            max_difficulty = int(diff_str)
+            break
+        except ValueError:
+            print("[-] 请输入有效的整数难度。")
+
+    while True:
+        results_str = input("请输入最大输出路径数量 [默认 10]: ").strip()
+        if not results_str:
+            max_results = 10
+            break
+        try:
+            max_results = int(results_str)
+            break
+        except ValueError:
+            print("[-] 请输入有效的整数。")
+
+    print(f"\n⚡ 正在调配 DFS 算法检索从 {start_state} 到 {end_state} (中间间隔 {intermediate_count} 个状态) 的合规路径...")
+    paths = engine.search_paths(start_state, end_state, intermediate_count, max_difficulty, max_results)
+
+    if not paths:
+        print("[-] ❌ 未检索到任何符合条件的滑行路线。建议尝试调整间隔状态数或提升允许难度限制。")
+    else:
+        print(f"[+] 🎉 成功检索到 {len(paths)} 条合规路径：\n")
+        for p_idx, path in enumerate(paths, 1):
+            seq_repr = [str(s) for s, _ in path]
+            print(f"  【路径 #{p_idx}】 {' -> '.join(seq_repr)}")
+            total_difficulty = sum(step[1].difficulty for step in path if step[1])
+            print(f"    * 难度总和: {total_difficulty}")
+            for i in range(len(path) - 1):
+                s_curr, m_next = path[i]
+                s_next = path[i + 1][0]
+                if m_next:
+                    print(f"      - {s_curr} ──▶ {s_next} | {m_next.name} (难度: {m_next.difficulty})")
+            print()
+
+        while True:
+            export_choice = input(f"请输入需要导出详细报告的路径序号 [1-{len(paths)}，直接回车返回]: ").strip()
+            if not export_choice:
+                break
+            try:
+                selected_idx = int(export_choice) - 1
+                if 0 <= selected_idx < len(paths):
+                    export_path(paths[selected_idx])
+                    break
+                else:
+                    print("[-] 序号超出范围，请重新输入。")
+            except ValueError:
+                print("[-] 请输入有效的序号数字。")
+
+
 def main():
     parser = argparse.ArgumentParser(description="花样滑冰步法智能编排状态机系统 CLI")
     parser.add_argument(
@@ -386,9 +479,10 @@ def main():
         print("  2. 序列解析与合法性验证模块 (Sequence Verifier)")
         print("  3. 智能随机生成模块 (Auto-Generator)")
         print("  4. 动作库完整性诊断 (Action Library Linter)")
-        print("  5. 退出系统 (Exit)")
+        print("  5. 物理路径搜索 (Path Search)")
+        print("  6. 退出系统 (Exit)")
         print("=" * 50)
-        choice = input("请选择功能序号 [1-5]: ").strip()
+        choice = input("请选择功能序号 [1-6]: ").strip()
 
         if choice == "1":
             run_interactive(engine)
@@ -399,10 +493,12 @@ def main():
         elif choice == "4":
             run_linter(engine)
         elif choice == "5":
+            run_path_search(engine)
+        elif choice == "6":
             print("\n感谢使用！滑冰愉快！❄️")
             break
         else:
-            print("[-] 无效序号，请在 [1-5] 之间进行选择。")
+            print("[-] 无效序号，请在 [1-6] 之间进行选择。")
 
 
 if __name__ == "__main__":
