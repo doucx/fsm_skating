@@ -1,1 +1,1 @@
-{"meta_version": "1.0", "summary": "[WIP] feat(web): 统一路径渲染组件并美化验证与搜索结果 UI", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782003621.9935837, "duration_ms": 0}}
+{"meta_version": "1.0", "summary": "[COMMIT] feat(web): 提取统一的路径渲染组件并美化结果列表 UI", "type": "plan", "generator": {"id": "manual", "tool": "quipu-cli"}, "env": {"quipu": "0.1.0", "python": "3.13.5", "os": "linux"}, "exec": {"start": 1782003667.135117, "duration_ms": 0}}
