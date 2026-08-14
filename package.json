@@ -1,0 +1,28 @@
+{
+  "name": "fsm_skating",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "preact": "^10.19.0"
+  },
+  "devDependencies": {
+    "@modyfi/vite-plugin-yaml": "^1.1.0",
+    "@preact/preset-vite": "^2.8.0",
+    "autoprefixer": "^10.4.18",
+    "js-yaml": "^4.1.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.0",
+    "vite": "^5.1.0",
+    "vite-plugin-pwa": "^0.19.0",
+    "vitest": "^1.3.0"
+  }
+}
